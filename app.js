@@ -54,9 +54,10 @@ app.post('/publish/:uuid', async (req,res) => {
       PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
       PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
       PREFIX pav: <http://purl.org/pav/>
-      SELECT ?publishedContainer
+      SELECT ?publishedContainer ?currentVersion
       WHERE {
         ${sparqlEscapeUri(reglementUri)} ext:publishedVersion ?publishedContainer .
+        ?publishedContainer  ext:currentVersion ?currentVersion.
       }
     `;
     
@@ -72,13 +73,39 @@ app.post('/publish/:uuid', async (req,res) => {
     const publishedVersionResults = await query(publishedVersionQuery);
     let insertPublishedVersionQuery;
     if(publishedVersionResults.results.bindings[0] && publishedVersionResults.results.bindings[0].publishedContainer) {
+      const publishedContainerUri = publishedVersionResults.results.bindings[0].publishedContainer.value;
+      const currentVersionUri = publishedVersionResults.results.bindings[0].currentVersion.value
       insertPublishedVersionQuery = `
         PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
         PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
         PREFIX pav: <http://purl.org/pav/>
-        SELECT ?publishedContainer
-        WHERE {
-          ?publishedContainer ext:publishedVersion ${sparqlEscapeUri(reglementUri)}.
+        PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
+        PREFIX nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>
+        PREFIX dct: <http://purl.org/dc/terms/>
+        PREFIX dbpedia: <http://dbpedia.org/ontology/>
+        INSERT DATA {
+          ${sparqlEscapeUri(publishedContainerUri)} ext:currentVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
+          ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} a ext:PublishedRegulatoryAttachment;
+            ext:content ${sparqlEscapeUri(virtualFileUri)};
+            pav:createdOn ${sparqlEscapeDateTime(now)};
+            pav:lastUpdateOn ${sparqlEscapeDateTime(now)};
+            pav:previousVersion ${sparqlEscapeUri(currentVersionUri)}
+            ext:container  ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)}.
+          ${sparqlEscapeUri(virtualFileUri)} a nfo:FileDataObject;
+            mu:uuid ${sparqlEscapeString(virtualFileUuid)};
+            nfo:fileName ${sparqlEscapeString(fileName)};
+            dct:format ${sparqlEscapeString('application/html')};
+            nfo:fileSize ${fileSize};
+            dbpedia:fileExtension ${sparqlEscapeString('html')};
+            dct:created ${sparqlEscapeDateTime(now)};
+            nie:dataSource ${sparqlEscapeUri(physicalFileUri)}.
+          ${sparqlEscapeUri(physicalFileUri)} a nfo:FileDataObject;
+            mu:uuid ${sparqlEscapeString(virtualFileUuid)};
+            nfo:fileName ${sparqlEscapeString(fileName)};
+            dct:format ${sparqlEscapeString('application/html')};
+            nfo:fileSize ${fileSize};
+            dbpedia:fileExtension ${sparqlEscapeString('html')};
+            dct:created ${sparqlEscapeDateTime(now)}.
         }
       `;
     } else {
