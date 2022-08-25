@@ -1,7 +1,12 @@
 import { app, sparqlEscapeString, sparqlEscapeUri, sparqlEscapeDateTime, errorHandler, uuid } from 'mu';
 import { querySudo as query, updateSudo as update } from '@lblod/mu-auth-sudo';
 import fs from 'fs';
-import path from 'path'
+import { 
+  TASK_STATUS_FAILURE,
+  TASK_STATUS_RUNNING,
+  TASK_STATUS_SUCCESS9898
+} from './models/task';
+import { ensureTask } from './util/task-utils'
 
 
 app.get('/', function( req, res ) {
@@ -10,99 +15,119 @@ app.get('/', function( req, res ) {
 
 
 app.post('/publish/:uuid', async (req,res) => {
-  const reglementUuid = req.params.uuid;
-  var myQuery = `
-    PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-    PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-    PREFIX pav: <http://purl.org/pav/>
-    SELECT ?content ?reglement
-    WHERE {
-      ?reglement mu:uuid ${sparqlEscapeString(reglementUuid)};
-        ext:hasDocumentContainer ?documentContainer.
-      ?documentContainer pav:hasCurrentVersion ?editorDocument.
-      ?editorDocument ext:editorDocumentTemplateVersion ?content.
-    }
-  `;
-  const result = await query(myQuery);
-  const bindings = result.results.bindings[0];
-  const template = bindings.content.value;
-  const reglementUri = bindings.reglement.value;
-  var publishedVersionQuery = `
-    PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-    PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-    PREFIX pav: <http://purl.org/pav/>
-    SELECT ?publishedContainer
-    WHERE {
-      ${sparqlEscapeUri(reglementUri)} ext:publishedVersion ?publishedContainer .
-    }
-  `;
-  
-  const fileUuid = uuid();
-  const fileName = `${fileUuid}.html`
-  const filePath = `/share/${fileName}`
-  console.log(filePath)
-  fs.writeFileSync(filePath, template);
-  const fileSize = fs.statSync(filePath).size
-  const virtualFileUuid = uuid()
-  const virtualFileUri = `http://data.lblod.info/files/${virtualFileUuid}`
-  const physicalFileUri = `share://${fileName}`
-  const publishedVersionResults = await query(publishedVersionQuery);
-  let insertPublishedVersionQuery;
-  if(publishedVersionResults.results.bindings[0] && publishedVersionResults.results.bindings[0].publishedContainer) {
-    insertPublishedVersionQuery = `
+  let reglementUri;
+  let template;
+  let publishingTask
+  try {
+    const reglementUuid = req.params.uuid;
+    var myQuery = `
+      PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+      PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+      PREFIX pav: <http://purl.org/pav/>
+      SELECT ?content ?reglement
+      WHERE {
+        ?reglement mu:uuid ${sparqlEscapeString(reglementUuid)};
+          ext:hasDocumentContainer ?documentContainer.
+        ?documentContainer pav:hasCurrentVersion ?editorDocument.
+        ?editorDocument ext:editorDocumentTemplateVersion ?content.
+      }
+    `;
+    const result = await query(myQuery);
+    const bindings = result.results.bindings[0];
+    template = bindings.content.value;
+    
+    reglementUri = bindings.reglement.value;
+    publishingTask = await ensureTask(reglementUri);
+    res.json({ data: { id: publishingTask.id, status: "accepted" , type: publishingTask.type}});
+  } catch (err) {
+    console.log(err);
+    const error = new Error(
+      `An error occurred while publishing the reglement ${
+        req.params.uuid
+      }: ${err}`
+    );
+    return next(error);
+  }
+  try {
+    await publishingTask.updateStatus(TASK_STATUS_RUNNING);
+    var publishedVersionQuery = `
       PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
       PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
       PREFIX pav: <http://purl.org/pav/>
       SELECT ?publishedContainer
       WHERE {
-        ?publishedContainer ext:publishedVersion ${sparqlEscapeUri(reglementUri)}.
+        ${sparqlEscapeUri(reglementUri)} ext:publishedVersion ?publishedContainer .
       }
     `;
-  } else {
-    const publishedRegulatoryAttachmentContainerUuid = uuid();
-    const publishedRegulatoryAttachmentContainerUri = `http://data.lblod.info/published-regulatory-attachment-container/${publishedRegulatoryAttachmentContainerUuid}`;
-    const publishedRegulatoryAttachmentUuid = uuid();
-    const publishedRegulatoryAttachmentUri = `http://data.lblod.info/published-regulatory-attachment/${publishedRegulatoryAttachmentUuid}`;
-    const now = new Date()
-    insertPublishedVersionQuery = `
-      PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-      PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-      PREFIX pav: <http://purl.org/pav/>
-      PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
-      PREFIX nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>
-      PREFIX dct: <http://purl.org/dc/terms/>
-      PREFIX dbpedia: <http://dbpedia.org/ontology/>
-      INSERT DATA {
-        ${sparqlEscapeUri(reglementUri)} ext:publishedVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)}.
-        ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)} a ext:PublishedRegulatoryAttachmentContainer;
-          ext:currentVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
-        ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} a ext:PublishedRegulatoryAttachment;
-          ext:content ${sparqlEscapeUri(virtualFileUri)};
-          pav:createdOn ${sparqlEscapeDateTime(now)};
-          pav:lastUpdateOn ${sparqlEscapeDateTime(now)};
-          ext:container  ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)}.
-        ${sparqlEscapeUri(virtualFileUri)} a nfo:FileDataObject;
-          mu:uuid ${sparqlEscapeString(virtualFileUuid)};
-          nfo:fileName ${sparqlEscapeString(fileName)};
-          dct:format ${sparqlEscapeString('application/html')};
-          nfo:fileSize ${fileSize};
-          dbpedia:fileExtension ${sparqlEscapeString('html')};
-          dct:created ${sparqlEscapeDateTime(now)};
-          nie:dataSource ${sparqlEscapeUri(physicalFileUri)}.
-        ${sparqlEscapeUri(physicalFileUri)} a nfo:FileDataObject;
-          mu:uuid ${sparqlEscapeString(virtualFileUuid)};
-          nfo:fileName ${sparqlEscapeString(fileName)};
-          dct:format ${sparqlEscapeString('application/html')};
-          nfo:fileSize ${fileSize};
-          dbpedia:fileExtension ${sparqlEscapeString('html')};
-          dct:created ${sparqlEscapeDateTime(now)}.
-      }
-    `;
-  }
-
-  await query(insertPublishedVersionQuery);
     
-  res.end('Success')
+    const fileUuid = uuid();
+    const fileName = `${fileUuid}.html`
+    const filePath = `/share/${fileName}`
+    console.log(filePath)
+    fs.writeFileSync(filePath, template);
+    const fileSize = fs.statSync(filePath).size
+    const virtualFileUuid = uuid()
+    const virtualFileUri = `http://data.lblod.info/files/${virtualFileUuid}`
+    const physicalFileUri = `share://${fileName}`
+    const publishedVersionResults = await query(publishedVersionQuery);
+    let insertPublishedVersionQuery;
+    if(publishedVersionResults.results.bindings[0] && publishedVersionResults.results.bindings[0].publishedContainer) {
+      insertPublishedVersionQuery = `
+        PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+        PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+        PREFIX pav: <http://purl.org/pav/>
+        SELECT ?publishedContainer
+        WHERE {
+          ?publishedContainer ext:publishedVersion ${sparqlEscapeUri(reglementUri)}.
+        }
+      `;
+    } else {
+      const publishedRegulatoryAttachmentContainerUuid = uuid();
+      const publishedRegulatoryAttachmentContainerUri = `http://data.lblod.info/published-regulatory-attachment-container/${publishedRegulatoryAttachmentContainerUuid}`;
+      const publishedRegulatoryAttachmentUuid = uuid();
+      const publishedRegulatoryAttachmentUri = `http://data.lblod.info/published-regulatory-attachment/${publishedRegulatoryAttachmentUuid}`;
+      const now = new Date()
+      insertPublishedVersionQuery = `
+        PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+        PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+        PREFIX pav: <http://purl.org/pav/>
+        PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
+        PREFIX nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>
+        PREFIX dct: <http://purl.org/dc/terms/>
+        PREFIX dbpedia: <http://dbpedia.org/ontology/>
+        INSERT DATA {
+          ${sparqlEscapeUri(reglementUri)} ext:publishedVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)}.
+          ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)} a ext:PublishedRegulatoryAttachmentContainer;
+            ext:currentVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
+          ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} a ext:PublishedRegulatoryAttachment;
+            ext:content ${sparqlEscapeUri(virtualFileUri)};
+            pav:createdOn ${sparqlEscapeDateTime(now)};
+            pav:lastUpdateOn ${sparqlEscapeDateTime(now)};
+            ext:container  ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)}.
+          ${sparqlEscapeUri(virtualFileUri)} a nfo:FileDataObject;
+            mu:uuid ${sparqlEscapeString(virtualFileUuid)};
+            nfo:fileName ${sparqlEscapeString(fileName)};
+            dct:format ${sparqlEscapeString('application/html')};
+            nfo:fileSize ${fileSize};
+            dbpedia:fileExtension ${sparqlEscapeString('html')};
+            dct:created ${sparqlEscapeDateTime(now)};
+            nie:dataSource ${sparqlEscapeUri(physicalFileUri)}.
+          ${sparqlEscapeUri(physicalFileUri)} a nfo:FileDataObject;
+            mu:uuid ${sparqlEscapeString(virtualFileUuid)};
+            nfo:fileName ${sparqlEscapeString(fileName)};
+            dct:format ${sparqlEscapeString('application/html')};
+            nfo:fileSize ${fileSize};
+            dbpedia:fileExtension ${sparqlEscapeString('html')};
+            dct:created ${sparqlEscapeDateTime(now)}.
+        }
+      `;
+    }
+
+    await query(insertPublishedVersionQuery);
+    await publishingTask.updateStatus(TASK_STATUS_SUCCESS);
+  } catch (err) {
+    publishingTask.updateStatus(TASK_STATUS_FAILURE, err.message);
+  }
 })
 
 
