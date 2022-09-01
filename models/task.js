@@ -1,20 +1,20 @@
 import {
-  query,
-  update,
   uuid,
   sparqlEscapeUri,
   sparqlEscapeString,
   sparqlEscapeDateTime,
   // @ts-ignore
   sparqlEscapeInt} from 'mu';
+import { querySudo as query, updateSudo as update } from '@lblod/mu-auth-sudo';
 
 export const TASK_STATUS_FAILURE =  "http://lblod.data.gift/besluit-publicatie-melding-statuses/failure";
 export const TASK_STATUS_CREATED =  "http://lblod.data.gift/besluit-publicatie-melding-statuses/created";
 export const TASK_STATUS_SUCCESS =  "http://lblod.data.gift/besluit-publicatie-melding-statuses/success";
 export const TASK_STATUS_RUNNING = "http://lblod.data.gift/besluit-publicatie-melding-statuses/ongoing";
+export const TASK_TYPE_REGLEMENT_PUBLISH = "regulatoryStatementPublication";
 
 export default class Task {
-  static async create(meeting, type) {
+  static async create(reglementUri) {
     const id = uuid();
     const uri = `http://lblod.data.gift/tasks/${id}`;
     const created = Date.now();
@@ -31,13 +31,13 @@ export default class Task {
                                                 task:numberOfRetries ${sparqlEscapeInt(0)};
                                                 dct:created ${sparqlEscapeDateTime(created)};
                                                 dct:modified ${sparqlEscapeDateTime(created)};
-                                                dct:creator <http://lblod.data.gift/services/notulen-prepublish-service>;
-                                                dct:type ${sparqlEscapeString(type)};
-                                                nuao:involves ${sparqlEscapeUri(meeting.uri)}.
+                                                dct:creator <http://lblod.data.gift/services/reglement-publish-service>;
+                                                dct:type ${sparqlEscapeString(TASK_TYPE_REGLEMENT_PUBLISH)};
+                                                nuao:involves ${sparqlEscapeUri(reglementUri)}.
     }
   `;
     await update(queryString);
-    return new Task({id, type, involves: meeting.uri, created, modified: created, status: TASK_STATUS_CREATED, uri});
+    return new Task({id, type: TASK_TYPE_REGLEMENT_PUBLISH, involves: reglementUri, created, modified: created, status: TASK_STATUS_CREATED, uri});
   }
 
   static async find(uuid) {
@@ -55,7 +55,7 @@ export default class Task {
             dct:created ?created;
             dct:modified ?modified;
             nuao:involves ?involves;
-            dct:creator <http://lblod.data.gift/services/notulen-prepublish-service>;
+            dct:creator <http://lblod.data.gift/services/reglement-publish-service>;
             adms:status ?status.
      }
    `);
@@ -66,7 +66,7 @@ export default class Task {
       return null;
   }
 
-  static async query({meetingUri, type, userUri = null}) {
+  static async query({reglementUri, userUri = null}) {
     const result = await query(`
      PREFIX    mu: <http://mu.semte.ch/vocabularies/core/>
      PREFIX    nuao: <http://www.semanticdesktop.org/ontologies/2010/01/25/nuao#>
@@ -76,17 +76,17 @@ export default class Task {
      SELECT ?uri ?uuid ?type ?involves ?status ?modified ?created WHERE {
        ?uri a task:Task;
             mu:uuid ?uuid;
-            dct:type ${sparqlEscapeString(type)};
             dct:created ?created;
             dct:modified ?modified;
-            nuao:involves ${sparqlEscapeUri(meetingUri)};
-            dct:creator <http://lblod.data.gift/services/notulen-prepublish-service>;
+            dct:type ${sparqlEscapeString(TASK_TYPE_REGLEMENT_PUBLISH)};
+            nuao:involves ${sparqlEscapeUri(reglementUri)};
+            dct:creator <http://lblod.data.gift/services/reglement-publish-service>;
             adms:status ?status.
        ${userUri ? `?uri nuao:involves ${sparqlEscapeUri(userUri)}.` : ''}
      }
    `);
     if (result.results.bindings.length) {
-      return Task.fromBinding({...result.results.bindings[0], type: type, involves: meetingUri});
+      return Task.fromBinding({...result.results.bindings[0], type: TASK_TYPE_REGLEMENT_PUBLISH, involves: reglementUri});
     }
     else
       return null;
