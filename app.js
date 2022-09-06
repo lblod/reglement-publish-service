@@ -200,6 +200,36 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
   }
 })
 
+app.post('/invalidate/regulatory-attachment/:uuid', async (req,res, next) => {
+  const reglementUuid = req.params.uuid;
+  var myQuery = `
+    PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+    PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+    PREFIX pav: <http://purl.org/pav/>
+    SELECT ?content ?reglement ?graph
+    WHERE {
+      GRAPH ?graph {
+        ?reglement mu:uuid ${sparqlEscapeString(reglementUuid)};
+          ext:hasDocumentContainer ?documentContainer.
+      }
+    }
+  `;
+  const result = await query(myQuery);
+  const bindings = result.results.bindings[0];
+  const graphUri = bindings.graph.value;
+  const reglementUri = bindings.reglement.value;
+  const insertValidThroughQuery = `
+    PREFIX schema: <http://schema.org/>
+    INSERT DATA {
+      GRAPH ${sparqlEscapeUri(graphUri)} {
+        ${sparqlEscapeUri(reglementUri)} schema:validThrough ${sparqlEscapeDateTime(new Date())}
+      }
+    }
+  `
+  await query(insertValidThroughQuery);
+  res.json({status: 'success'})
+})
+
 app.get('/publication-tasks/:id', async function (req, res) {
   const taskUuid = req.params.id;
   const task = await Task.find(taskUuid);
