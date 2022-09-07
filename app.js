@@ -8,11 +8,6 @@ import Task, {
 } from './models/task';
 import { ensureTask } from './util/task-utils';
 
-
-app.get('/', function( req, res ) {
-  res.send('Hello mu-javascript-template');
-} );
-
 app.get('/preview/regulatory-attachment/:uuid', async (req,res) => {
   const reglementUuid = req.params.uuid;
   var myQuery = `
