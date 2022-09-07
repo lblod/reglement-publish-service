@@ -117,7 +117,7 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
         PREFIX dct: <http://purl.org/dc/terms/>
         PREFIX dbpedia: <http://dbpedia.org/ontology/>
         INSERT DATA {
-          GRAPH ${sparqlEscapeUri(graphUri)} {
+          GRAPH <http://mu.semte.ch/graphs/public> {
             ${sparqlEscapeUri(publishedContainerUri)} ext:currentVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
             ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} a ext:PublishedRegulatoryAttachment;
               ext:content ${sparqlEscapeUri(virtualFileUri)};
@@ -159,6 +159,9 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
         PREFIX dbpedia: <http://dbpedia.org/ontology/>
         INSERT DATA {
           GRAPH ${sparqlEscapeUri(graphUri)} {
+            ${sparqlEscapeUri(reglementUri)} ext:publishedVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)}.
+          }
+          GRAPH <http://mu.semte.ch/graphs/public> {
             ${sparqlEscapeUri(reglementUri)} ext:publishedVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)}.
             ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)} a ext:PublishedRegulatoryAttachmentContainer;
               ext:currentVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
@@ -202,22 +205,17 @@ app.post('/invalidate/regulatory-attachment/:uuid', async (req,res) => {
     PREFIX pav: <http://purl.org/pav/>
     SELECT ?content ?reglement ?graph
     WHERE {
-      GRAPH ?graph {
         ?reglement mu:uuid ${sparqlEscapeString(reglementUuid)};
           ext:hasDocumentContainer ?documentContainer.
-      }
     }
   `;
   const result = await query(myQuery);
   const bindings = result.results.bindings[0];
-  const graphUri = bindings.graph.value;
   const reglementUri = bindings.reglement.value;
   const insertValidThroughQuery = `
     PREFIX schema: <http://schema.org/>
     INSERT DATA {
-      GRAPH ${sparqlEscapeUri(graphUri)} {
         ${sparqlEscapeUri(reglementUri)} schema:validThrough ${sparqlEscapeDateTime(new Date())}
-      }
     }
   `;
   await query(insertValidThroughQuery);
