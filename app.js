@@ -149,6 +149,7 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
       const publishedRegulatoryAttachmentUuid = uuid();
       const publishedRegulatoryAttachmentUri = `http://data.lblod.info/published-regulatory-attachment/${publishedRegulatoryAttachmentUuid}`;
       const now = new Date();
+      //Little hack we insert the publishedVersion uri in both graphs to use it in the frontend with the organization graph and in the publisher with the public graph
       insertPublishedVersionQuery = `
         PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
         PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
