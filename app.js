@@ -6,14 +6,14 @@ import Task, {
   TASK_STATUS_RUNNING,
   TASK_STATUS_SUCCESS
 } from './models/task';
-import { ensureTask } from './util/task-utils'
+import { ensureTask } from './util/task-utils';
 
 
 app.get('/', function( req, res ) {
   res.send('Hello mu-javascript-template');
 } );
 
-app.get('/preview/regulatory-attachment/:uuid', async (req,res, next) => {
+app.get('/preview/regulatory-attachment/:uuid', async (req,res) => {
   const reglementUuid = req.params.uuid;
   var myQuery = `
     PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
@@ -32,9 +32,9 @@ app.get('/preview/regulatory-attachment/:uuid', async (req,res, next) => {
   const result = await query(myQuery);
   const bindings = result.results.bindings[0];
   const filename = bindings.filename.value;
-  const filePath = `/share/${filename}`
+  const filePath = `/share/${filename}`;
   const content = fs.readFileSync(filePath, {encoding:'utf8', flag:'r'});
-  res.json({content})
+  res.json({content});
 });
 
 
@@ -89,30 +89,29 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
     `;
     
     const fileUuid = uuid();
-    const fileName = `${fileUuid}.html`
-    const filePath = `/share/${fileName}`
-    console.log(filePath)
+    const fileName = `${fileUuid}.html`;
+    const filePath = `/share/${fileName}`;
     fs.writeFileSync(filePath, template);
-    const fileSize = fs.statSync(filePath).size
-    const virtualFileUuid = uuid()
-    const virtualFileUri = `http://data.lblod.info/files/${virtualFileUuid}`
-    const physicalFileUri = `share://${fileName}`
+    const fileSize = fs.statSync(filePath).size;
+    const virtualFileUuid = uuid();
+    const virtualFileUri = `http://data.lblod.info/files/${virtualFileUuid}`;
+    const physicalFileUri = `share://${fileName}`;
     const publishedVersionResults = await query(publishedVersionQuery);
     let insertPublishedVersionQuery;
     if(publishedVersionResults.results.bindings[0] && publishedVersionResults.results.bindings[0].publishedContainer) {
       const publishedContainerUri = publishedVersionResults.results.bindings[0].publishedContainer.value;
-      const currentVersionUri = publishedVersionResults.results.bindings[0].currentVersion.value
+      const currentVersionUri = publishedVersionResults.results.bindings[0].currentVersion.value;
       const publishedRegulatoryAttachmentUuid = uuid();
       const publishedRegulatoryAttachmentUri = `http://data.lblod.info/published-regulatory-attachment/${publishedRegulatoryAttachmentUuid}`;
-      const now = new Date()
+      const now = new Date();
       const deleteCurrentVersionQuery = `
         PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
         DELETE WHERE {
           ${sparqlEscapeUri(publishedContainerUri)} ext:currentVersion ?currentVersion.
         }
-      `
+      `;
 
-      await update(deleteCurrentVersionQuery)
+      await update(deleteCurrentVersionQuery);
 
       insertPublishedVersionQuery = `
         PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
@@ -154,7 +153,7 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
       const publishedRegulatoryAttachmentContainerUri = `http://data.lblod.info/published-regulatory-attachment-container/${publishedRegulatoryAttachmentContainerUuid}`;
       const publishedRegulatoryAttachmentUuid = uuid();
       const publishedRegulatoryAttachmentUri = `http://data.lblod.info/published-regulatory-attachment/${publishedRegulatoryAttachmentUuid}`;
-      const now = new Date()
+      const now = new Date();
       insertPublishedVersionQuery = `
         PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
         PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
@@ -198,9 +197,9 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
   } catch (err) {
     publishingTask.updateStatus(TASK_STATUS_FAILURE, err.message);
   }
-})
+});
 
-app.post('/invalidate/regulatory-attachment/:uuid', async (req,res, next) => {
+app.post('/invalidate/regulatory-attachment/:uuid', async (req,res) => {
   const reglementUuid = req.params.uuid;
   var myQuery = `
     PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
@@ -225,10 +224,10 @@ app.post('/invalidate/regulatory-attachment/:uuid', async (req,res, next) => {
         ${sparqlEscapeUri(reglementUri)} schema:validThrough ${sparqlEscapeDateTime(new Date())}
       }
     }
-  `
+  `;
   await query(insertValidThroughQuery);
-  res.json({status: 'success'})
-})
+  res.json({status: 'success'});
+});
 
 app.get('/publication-tasks/:id', async function (req, res) {
   const taskUuid = req.params.id;
