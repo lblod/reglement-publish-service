@@ -7,7 +7,7 @@ import Task, {
   TASK_STATUS_SUCCESS
 } from './models/task';
 import { ensureTask } from './util/task-utils';
-import cors from 'cors'
+import cors from 'cors';
 
 app.get('/preview/regulatory-attachment/:uuid', cors(), async (req,res) => {
   const reglementUuid = req.params.uuid;
@@ -62,7 +62,7 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
   let template;
   let publishingTask;
   let graphUri;
-  let title
+  let title;
   try {
     const reglementUuid = req.params.uuid;
     var myQuery = `
