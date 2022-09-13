@@ -7,8 +7,9 @@ import Task, {
   TASK_STATUS_SUCCESS
 } from './models/task';
 import { ensureTask } from './util/task-utils';
+import cors from 'cors'
 
-app.get('/preview/regulatory-attachment/:uuid', async (req,res) => {
+app.get('/preview/regulatory-attachment/:uuid', cors(), async (req,res) => {
   const reglementUuid = req.params.uuid;
   var myQuery = `
     PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
@@ -19,6 +20,29 @@ app.get('/preview/regulatory-attachment/:uuid', async (req,res) => {
     WHERE {
       ?reglement mu:uuid ${sparqlEscapeString(reglementUuid)}.
       ?reglement ext:publishedVersion ?publishedContainer .
+      ?publishedContainer  ext:currentVersion ?currentVersion.
+      ?currentVersion ext:content ?virtualFile.
+      ?virtualFile nfo:fileName ?filename.
+    }
+  `;
+  const result = await query(myQuery);
+  const bindings = result.results.bindings[0];
+  const filename = bindings.filename.value;
+  const filePath = `/share/${filename}`;
+  const content = fs.readFileSync(filePath, {encoding:'utf8', flag:'r'});
+  res.json({content});
+});
+
+app.get('/preview/regulatory-attachment-container/:uuid', cors(), async (req,res) => {
+  const reglementUuid = req.params.uuid;
+  var myQuery = `
+    PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+    PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+    PREFIX pav: <http://purl.org/pav/>
+    PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
+    SELECT ?filename
+    WHERE {
+      ?publishedContainer mu:uuid ${sparqlEscapeString(reglementUuid)}.
       ?publishedContainer  ext:currentVersion ?currentVersion.
       ?currentVersion ext:content ?virtualFile.
       ?virtualFile nfo:fileName ?filename.
@@ -45,6 +69,7 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
       PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
       PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
       PREFIX pav: <http://purl.org/pav/>
+      PREFIX dct: <http://purl.org/dc/terms/>
       SELECT ?content ?reglement ?graph ?title
       WHERE {
         GRAPH ?graph {
@@ -126,7 +151,7 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
             ${sparqlEscapeUri(publishedContainerUri)} ext:currentVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
             ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} a ext:PublishedRegulatoryAttachment;
               mu:uuid ${sparqlEscapeString(publishedRegulatoryAttachmentUuid)};
-              dct:title ${sparqlEscapeUri(title)};
+              dct:title ${sparqlEscapeString(title)};
               ext:content ${sparqlEscapeUri(virtualFileUri)};
               pav:createdOn ${sparqlEscapeDateTime(now)};
               pav:lastUpdateOn ${sparqlEscapeDateTime(now)};
@@ -176,7 +201,7 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
               ext:currentVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
             ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} a ext:PublishedRegulatoryAttachment;
               mu:uuid ${sparqlEscapeString(publishedRegulatoryAttachmentUuid)};
-              dct:title ${sparqlEscapeUri(title)};
+              dct:title ${sparqlEscapeString(title)};
               ext:content ${sparqlEscapeUri(virtualFileUri)};
               pav:createdOn ${sparqlEscapeDateTime(now)};
               pav:lastUpdateOn ${sparqlEscapeDateTime(now)};
