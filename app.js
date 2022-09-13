@@ -38,19 +38,21 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
   let template;
   let publishingTask;
   let graphUri;
+  let title
   try {
     const reglementUuid = req.params.uuid;
     var myQuery = `
       PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
       PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
       PREFIX pav: <http://purl.org/pav/>
-      SELECT ?content ?reglement ?graph
+      SELECT ?content ?reglement ?graph ?title
       WHERE {
         GRAPH ?graph {
           ?reglement mu:uuid ${sparqlEscapeString(reglementUuid)};
             ext:hasDocumentContainer ?documentContainer.
           ?documentContainer pav:hasCurrentVersion ?editorDocument.
           ?editorDocument ext:editorDocumentTemplateVersion ?content.
+          ?editorDocument dct:title ?title.
         }
       }
     `;
@@ -59,6 +61,7 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
     template = bindings.content.value;
     graphUri = bindings.graph.value;
     reglementUri = bindings.reglement.value;
+    title = bindings.title.value;
     publishingTask = await ensureTask(reglementUri);
     res.json({ data: { id: publishingTask.id, status: "accepted" , type: publishingTask.type}});
   } catch (err) {
@@ -102,7 +105,9 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
       const deleteCurrentVersionQuery = `
         PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
         DELETE WHERE {
-          ${sparqlEscapeUri(publishedContainerUri)} ext:currentVersion ?currentVersion.
+          GRAPH <http://mu.semte.ch/graphs/public> {
+            ${sparqlEscapeUri(publishedContainerUri)} ext:currentVersion ?currentVersion.
+          }
         }
       `;
 
@@ -120,6 +125,8 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
           GRAPH <http://mu.semte.ch/graphs/public> {
             ${sparqlEscapeUri(publishedContainerUri)} ext:currentVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
             ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} a ext:PublishedRegulatoryAttachment;
+              mu:uuid ${sparqlEscapeString(publishedRegulatoryAttachmentUuid)};
+              dct:title ${sparqlEscapeUri(title)};
               ext:content ${sparqlEscapeUri(virtualFileUri)};
               pav:createdOn ${sparqlEscapeDateTime(now)};
               pav:lastUpdateOn ${sparqlEscapeDateTime(now)};
@@ -165,8 +172,11 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
           GRAPH <http://mu.semte.ch/graphs/public> {
             ${sparqlEscapeUri(reglementUri)} ext:publishedVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)}.
             ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)} a ext:PublishedRegulatoryAttachmentContainer;
+              mu:uuid ${sparqlEscapeString(publishedRegulatoryAttachmentContainerUuid)};
               ext:currentVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
             ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} a ext:PublishedRegulatoryAttachment;
+              mu:uuid ${sparqlEscapeString(publishedRegulatoryAttachmentUuid)};
+              dct:title ${sparqlEscapeUri(title)};
               ext:content ${sparqlEscapeUri(virtualFileUri)};
               pav:createdOn ${sparqlEscapeDateTime(now)};
               pav:lastUpdateOn ${sparqlEscapeDateTime(now)};
