@@ -7,9 +7,8 @@ import Task, {
   TASK_STATUS_SUCCESS
 } from './models/task';
 import { ensureTask } from './util/task-utils';
-import cors from 'cors';
 
-app.get('/preview/regulatory-attachment/:uuid', cors(), async (req,res) => {
+app.get('/preview/regulatory-attachment/:uuid', async (req,res) => {
   const reglementUuid = req.params.uuid;
   var myQuery = `
     PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
@@ -33,7 +32,7 @@ app.get('/preview/regulatory-attachment/:uuid', cors(), async (req,res) => {
   res.json({content});
 });
 
-app.get('/preview/regulatory-attachment-container/:uuid', cors(), async (req,res) => {
+app.get('/preview/regulatory-attachment-container/:uuid', async (req,res) => {
   const reglementUuid = req.params.uuid;
   var myQuery = `
     PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
