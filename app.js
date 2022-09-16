@@ -32,25 +32,51 @@ app.get('/preview/regulatory-attachment/:uuid', async (req,res) => {
   res.json({content});
 });
 
+app.get('/preview/regulatory-attachment-container/:uuid', async (req,res) => {
+  const reglementUuid = req.params.uuid;
+  var myQuery = `
+    PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+    PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+    PREFIX pav: <http://purl.org/pav/>
+    PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
+    SELECT ?filename
+    WHERE {
+      ?publishedContainer mu:uuid ${sparqlEscapeString(reglementUuid)}.
+      ?publishedContainer  ext:currentVersion ?currentVersion.
+      ?currentVersion ext:content ?virtualFile.
+      ?virtualFile nfo:fileName ?filename.
+    }
+  `;
+  const result = await query(myQuery);
+  const bindings = result.results.bindings[0];
+  const filename = bindings.filename.value;
+  const filePath = `/share/${filename}`;
+  const content = fs.readFileSync(filePath, {encoding:'utf8', flag:'r'});
+  res.json({content});
+});
+
 
 app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
   let reglementUri;
   let template;
   let publishingTask;
   let graphUri;
+  let title;
   try {
     const reglementUuid = req.params.uuid;
     var myQuery = `
       PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
       PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
       PREFIX pav: <http://purl.org/pav/>
-      SELECT ?content ?reglement ?graph
+      PREFIX dct: <http://purl.org/dc/terms/>
+      SELECT ?content ?reglement ?graph ?title
       WHERE {
         GRAPH ?graph {
           ?reglement mu:uuid ${sparqlEscapeString(reglementUuid)};
             ext:hasDocumentContainer ?documentContainer.
           ?documentContainer pav:hasCurrentVersion ?editorDocument.
           ?editorDocument ext:editorDocumentTemplateVersion ?content.
+          ?editorDocument dct:title ?title.
         }
       }
     `;
@@ -59,6 +85,7 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
     template = bindings.content.value;
     graphUri = bindings.graph.value;
     reglementUri = bindings.reglement.value;
+    title = bindings.title.value;
     publishingTask = await ensureTask(reglementUri);
     res.json({ data: { id: publishingTask.id, status: "accepted" , type: publishingTask.type}});
   } catch (err) {
@@ -102,7 +129,9 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
       const deleteCurrentVersionQuery = `
         PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
         DELETE WHERE {
-          ${sparqlEscapeUri(publishedContainerUri)} ext:currentVersion ?currentVersion.
+          GRAPH <http://mu.semte.ch/graphs/public> {
+            ${sparqlEscapeUri(publishedContainerUri)} ext:currentVersion ?currentVersion.
+          }
         }
       `;
 
@@ -120,6 +149,8 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
           GRAPH <http://mu.semte.ch/graphs/public> {
             ${sparqlEscapeUri(publishedContainerUri)} ext:currentVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
             ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} a ext:PublishedRegulatoryAttachment;
+              mu:uuid ${sparqlEscapeString(publishedRegulatoryAttachmentUuid)};
+              dct:title ${sparqlEscapeString(title)};
               ext:content ${sparqlEscapeUri(virtualFileUri)};
               pav:createdOn ${sparqlEscapeDateTime(now)};
               pav:lastUpdateOn ${sparqlEscapeDateTime(now)};
@@ -165,8 +196,11 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
           GRAPH <http://mu.semte.ch/graphs/public> {
             ${sparqlEscapeUri(reglementUri)} ext:publishedVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)}.
             ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)} a ext:PublishedRegulatoryAttachmentContainer;
+              mu:uuid ${sparqlEscapeString(publishedRegulatoryAttachmentContainerUuid)};
               ext:currentVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
             ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} a ext:PublishedRegulatoryAttachment;
+              mu:uuid ${sparqlEscapeString(publishedRegulatoryAttachmentUuid)};
+              dct:title ${sparqlEscapeString(title)};
               ext:content ${sparqlEscapeUri(virtualFileUri)};
               pav:createdOn ${sparqlEscapeDateTime(now)};
               pav:lastUpdateOn ${sparqlEscapeDateTime(now)};
