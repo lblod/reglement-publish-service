@@ -2,7 +2,7 @@
 This service can be used to publish and invalidate regulatory attachments
 
 ## Endpoints
-It provides 4 endpoints
+It provides 5 endpoints
 
 ## /publish/regulatory-attachment/:uuid
 It's a taskified enpoint that published the regulatory attachment with the provided uuid, the published info will have the following structure:
@@ -23,6 +23,9 @@ This endpoint checks the state of a task created by the previous endpoint
 
 ## /preview/regulatory-attachment/:uuid
 Previews a published regulatory attachment, it just returns a json with the content of said regulatory attachment
+
+## /preview/regulatory-attachment-container/:uuid
+Previews a regulatory attachment container
 
 ## /invalidate/regulatory-attachment/:uuid
 Invalidates the specified regulatory attachment, it just adds a `schema:validThrough` property with todays date to indicate that the publication is no longer valid
