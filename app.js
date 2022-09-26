@@ -26,6 +26,10 @@ app.get('/preview/regulatory-attachment/:uuid', async (req,res) => {
   `;
   const result = await query(myQuery);
   const bindings = result.results.bindings[0];
+  if(!bindings || !bindings.filename) {
+    res.status(404).end(); 
+    return;
+  }
   const filename = bindings.filename.value;
   const filePath = `/share/${filename}`;
   const content = fs.readFileSync(filePath, {encoding:'utf8', flag:'r'});
@@ -49,6 +53,10 @@ app.get('/preview/regulatory-attachment-container/:uuid', async (req,res) => {
   `;
   const result = await query(myQuery);
   const bindings = result.results.bindings[0];
+  if(!bindings || !bindings.filename) {
+    res.status(404).end(); 
+    return;
+  }
   const filename = bindings.filename.value;
   const filePath = `/share/${filename}`;
   const content = fs.readFileSync(filePath, {encoding:'utf8', flag:'r'});
