@@ -7,6 +7,9 @@ import Task, {
   TASK_STATUS_SUCCESS
 } from './models/task';
 import { ensureTask } from './util/task-utils';
+import bodyParser from 'body-parser';
+
+app.use(bodyParser.json())
 
 app.get('/preview/regulatory-attachment/:uuid', async (req,res) => {
   const reglementUuid = req.params.uuid;
@@ -64,14 +67,14 @@ app.get('/preview/regulatory-attachment-container/:uuid', async (req,res) => {
 });
 
 
-app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
+app.post('/regulatory-attachment-publication-tasks', async (req,res, next) => {
   let reglementUri;
   let template;
   let publishingTask;
   let graphUri;
   let title;
   try {
-    const reglementUuid = req.params.uuid;
+    const reglementUuid = req.body.data.relationships['regulatory-attachment'].data.id;
     var myQuery = `
       PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
       PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
@@ -155,6 +158,7 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
         PREFIX dbpedia: <http://dbpedia.org/ontology/>
         INSERT DATA {
           GRAPH <http://mu.semte.ch/graphs/public> {
+            ${sparqlEscapeUri(publishingTask.uri)} ext:publishedVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
             ${sparqlEscapeUri(publishedContainerUri)} ext:currentVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
             ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} a ext:PublishedRegulatoryAttachment;
               mu:uuid ${sparqlEscapeString(publishedRegulatoryAttachmentUuid)};
@@ -202,6 +206,7 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
             ${sparqlEscapeUri(reglementUri)} ext:publishedVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)}.
           }
           GRAPH <http://mu.semte.ch/graphs/public> {
+            ${sparqlEscapeUri(publishingTask.uri)} ext:publishedVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
             ${sparqlEscapeUri(reglementUri)} ext:publishedVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)}.
             ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)} a ext:PublishedRegulatoryAttachmentContainer;
               mu:uuid ${sparqlEscapeString(publishedRegulatoryAttachmentContainerUuid)};
@@ -273,6 +278,7 @@ app.get('/publication-tasks/:id', async function (req, res) {
       data: {
         id: task.id,
         status: task.status,
+        regulatoryAttachmentPublication: task.regulatoryAttachmentPublication,
         type: task.type,
         taskType: task.type,
       }

@@ -47,7 +47,8 @@ export default class Task {
      PREFIX    task: <http://redpencil.data.gift/vocabularies/tasks/>
      PREFIX    dct: <http://purl.org/dc/terms/>
      PREFIX    adms: <http://www.w3.org/ns/adms#>
-     SELECT ?uri ?uuid ?type ?involves ?status ?modified ?created WHERE {
+     PREFIX    ext: <http://mu.semte.ch/vocabularies/ext/>
+     SELECT ?uri ?uuid ?type ?involves ?status ?modified ?created ?regulatoryAttachmentPublication WHERE {
        BIND(${sparqlEscapeString(uuid)} AS ?uuid)
        ?uri a task:Task;
             mu:uuid ?uuid;
@@ -57,6 +58,9 @@ export default class Task {
             nuao:involves ?involves;
             dct:creator <http://lblod.data.gift/services/reglement-publish-service>;
             adms:status ?status.
+        OPTIONAL {
+          ?uri ext:publishedVersion ?regulatoryAttachmentPublication.
+        }
      }
    `);
     if (result.results.bindings.length) {
@@ -73,7 +77,8 @@ export default class Task {
      PREFIX    task: <http://redpencil.data.gift/vocabularies/tasks/>
      PREFIX    dct: <http://purl.org/dc/terms/>
      PREFIX    adms: <http://www.w3.org/ns/adms#>
-     SELECT ?uri ?uuid ?type ?involves ?status ?modified ?created WHERE {
+     PREFIX    ext: <http://mu.semte.ch/vocabularies/ext/>
+     SELECT ?uri ?uuid ?type ?involves ?status ?modified ?created ?regulatoryAttachmentPublication WHERE {
        ?uri a task:Task;
             mu:uuid ?uuid;
             dct:created ?created;
@@ -82,6 +87,9 @@ export default class Task {
             nuao:involves ${sparqlEscapeUri(reglementUri)};
             dct:creator <http://lblod.data.gift/services/reglement-publish-service>;
             adms:status ?status.
+        OPTIONAL {
+          ?uri ext:publishedVersion ?regulatoryAttachmentPublication.
+        }
        ${userUri ? `?uri nuao:involves ${sparqlEscapeUri(userUri)}.` : ''}
      }
    `);
@@ -100,11 +108,12 @@ export default class Task {
       modified: binding.modified.value,
       status: binding.status.value,
       involves: binding.involves.value,
-      type: binding.type.value
+      type: binding.type.value,
+      regulatoryAttachmentPublication: binding.regulatoryAttachmentPublication ? binding.regulatoryAttachmentPublication.value : undefined,
     });
   }
 
-  constructor({id, uri, created, status, modified, type, involves}) {
+  constructor({id, uri, created, status, modified, type, involves, regulatoryAttachmentPublication}) {
     this.id = id;
     this.type = type;
     this.involves = involves;
@@ -112,6 +121,7 @@ export default class Task {
     this.modified = modified;
     this.status = status;
     this.uri = uri;
+    this.regulatoryAttachmentPublication = regulatoryAttachmentPublication;
   }
 
   async updateStatus(status, reason) {
