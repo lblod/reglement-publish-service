@@ -278,9 +278,11 @@ app.get('/publication-tasks/:id', async function (req, res) {
       data: {
         id: task.id,
         status: task.status,
-        regulatoryAttachmentPublication: task.regulatoryAttachmentPublication,
         type: task.type,
         taskType: task.type,
+        relationships: {
+          "regulatory-attachment": task.regulatoryAttachmentPublication,
+        }
       }
     });
   }
