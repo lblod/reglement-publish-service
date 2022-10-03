@@ -37,3 +37,12 @@ publisher:
     volumes:
       - ./data/files/:/share/
 ```
+
+
+## Development
+
+### Making a release
+
+- make sure all relevant PRs have the appropriate labels according to [lerna-changelog](https://github.com/lerna/lerna-changelog#usage).
+- `npm run release`
+- check the changelog and follow the prompts. Say yes to tagging and creating a github release.

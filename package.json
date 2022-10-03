@@ -3,8 +3,14 @@
   "version": "1.1.0",
   "description": "",
   "main": "app.js",
+
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lblod/reglement-publish-service.git"
+  },
   "scripts": {
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "release": "release-it"
   },
   "author": "",
   "license": "ISC",
@@ -17,5 +23,9 @@
     "eslint-plugin-mocha": "^9.0.0",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^5.1.0"
+  },
+  "devDependencies": {
+    "@release-it-plugins/lerna-changelog": "^5.0.0",
+    "release-it": "^15.4.3"
   }
 }
