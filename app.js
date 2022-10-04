@@ -258,7 +258,9 @@ app.post('/invalidate/regulatory-attachment/:uuid', async (req,res) => {
   const insertValidThroughQuery = `
     PREFIX schema: <http://schema.org/>
     INSERT DATA {
+      GRAPH <http://mu.semte.ch/graphs/public> {
         ${sparqlEscapeUri(reglementUri)} schema:validThrough ${sparqlEscapeDateTime(new Date())}
+      }
     }
   `;
   await query(insertValidThroughQuery);
