@@ -7,65 +7,6 @@ import Task, {
   TASK_STATUS_SUCCESS
 } from './models/task';
 import { ensureTask } from './util/task-utils';
-import bodyParser from 'body-parser';
-
-app.use(bodyParser.json())
-
-app.get('/preview/regulatory-attachment/:uuid', async (req,res) => {
-  const reglementUuid = req.params.uuid;
-  var myQuery = `
-    PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-    PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-    PREFIX pav: <http://purl.org/pav/>
-    PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
-    SELECT ?filename
-    WHERE {
-      ?reglement mu:uuid ${sparqlEscapeString(reglementUuid)}.
-      ?reglement ext:publishedVersion ?publishedContainer .
-      ?publishedContainer  ext:currentVersion ?currentVersion.
-      ?currentVersion ext:content ?virtualFile.
-      ?virtualFile nfo:fileName ?filename.
-    }
-  `;
-  const result = await query(myQuery);
-  const bindings = result.results.bindings[0];
-  if(!bindings || !bindings.filename) {
-    res.status(404).end(); 
-    return;
-  }
-  const filename = bindings.filename.value;
-  const filePath = `/share/${filename}`;
-  const content = fs.readFileSync(filePath, {encoding:'utf8', flag:'r'});
-  res.json({content});
-});
-
-app.get('/preview/regulatory-attachment-container/:uuid', async (req,res) => {
-  const reglementUuid = req.params.uuid;
-  var myQuery = `
-    PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-    PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-    PREFIX pav: <http://purl.org/pav/>
-    PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
-    SELECT ?filename
-    WHERE {
-      ?publishedContainer mu:uuid ${sparqlEscapeString(reglementUuid)}.
-      ?publishedContainer  ext:currentVersion ?currentVersion.
-      ?currentVersion ext:content ?virtualFile.
-      ?virtualFile nfo:fileName ?filename.
-    }
-  `;
-  const result = await query(myQuery);
-  const bindings = result.results.bindings[0];
-  if(!bindings || !bindings.filename) {
-    res.status(404).end(); 
-    return;
-  }
-  const filename = bindings.filename.value;
-  const filePath = `/share/${filename}`;
-  const content = fs.readFileSync(filePath, {encoding:'utf8', flag:'r'});
-  res.json({content});
-});
-
 
 app.post('/regulatory-attachment-publication-tasks', async (req,res, next) => {
   let reglementUri;
@@ -245,32 +186,7 @@ app.post('/regulatory-attachment-publication-tasks', async (req,res, next) => {
   }
 });
 
-app.post('/invalidate/regulatory-attachment/:uuid', async (req,res) => {
-  const reglementUuid = req.params.uuid;
-  var myQuery = `
-    PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-    PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-    PREFIX pav: <http://purl.org/pav/>
-    SELECT ?content ?reglement ?graph
-    WHERE {
-        ?reglement mu:uuid ${sparqlEscapeString(reglementUuid)};
-          ext:hasDocumentContainer ?documentContainer.
-    }
-  `;
-  const result = await query(myQuery);
-  const bindings = result.results.bindings[0];
-  const reglementUri = bindings.reglement.value;
-  const insertValidThroughQuery = `
-    PREFIX schema: <http://schema.org/>
-    INSERT DATA {
-        ${sparqlEscapeUri(reglementUri)} schema:validThrough ${sparqlEscapeDateTime(new Date())}
-    }
-  `;
-  await query(insertValidThroughQuery);
-  res.json({status: 'success'});
-});
-
-app.get('/publication-tasks/:id', async function (req, res) {
+app.get('/regulatory-attachment-publication-tasks/:id', async function (req, res) {
   const taskUuid = req.params.id;
   const task = await Task.find(taskUuid);
   if (task) {
