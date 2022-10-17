@@ -15,7 +15,7 @@ app.post('/regulatory-attachment-publication-tasks', async (req,res, next) => {
   let graphUri;
   let title;
   try {
-    const reglementUuid = req.body.data.relationships.regulatoryAttachment.data.id;
+    const reglementUuid = req.body.data.relationships['regulatory-attachment'].data.id;
     var myQuery = `
       PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
       PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
