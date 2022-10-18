@@ -95,9 +95,9 @@ export default class Task {
    `);
     if (result.results.bindings.length) {
       return Task.fromBinding({...result.results.bindings[0], 
-																	type: { value: TASK_TYPE_REGLEMENT_PUBLISH }, 
-																	involves: { value: reglementUri }
-															});
+        type: { value: TASK_TYPE_REGLEMENT_PUBLISH }, 
+        involves: { value: reglementUri }
+      });
     }
     else
       return null;
