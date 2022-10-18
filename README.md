@@ -1,11 +1,11 @@
 # reglement-publish-service
-This service can be used to publish and invalidate regulatory attachments
+This service can be used to publish regulatory attachments
 
 ## Endpoints
-It provides 4 endpoints
+This service provides 2 different endpoints.
 
-## /publish/regulatory-attachment/:uuid
-It's a taskified enpoint that published the regulatory attachment with the provided uuid, the published info will have the following structure:
+## `POST` /publish/regulatory-attachment/:uuid
+A taskified enpoint which publishes the regulatory attachment with the provided uuid, the published info will have the following structure:
 ```
 $reglementUri ext:publishedVersion ?publishedContainer.
 ?publishedContainer ext:currentVersion ?currentVersion.
@@ -18,14 +18,8 @@ $reglementUri ext:publishedVersion ?publishedContainer.
 ```
 Being ?file the rdfa structure of a file per the file-service documentation
 
-## /publication-tasks/:id
-This endpoint checks the state of a task created by the previous endpoint
-
-## /preview/regulatory-attachment/:uuid
-Previews a published regulatory attachment, it just returns a json with the content of said regulatory attachment
-
-## /invalidate/regulatory-attachment/:uuid
-Invalidates the specified regulatory attachment, it just adds a `schema:validThrough` property with todays date to indicate that the publication is no longer valid
+## `GET` /regulatory-attachment-publication-tasks/:id
+This endpoint checks the state of a publishing task created by the previous endpoint
 
 
 ## Docker Compose Example
