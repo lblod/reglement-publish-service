@@ -115,15 +115,16 @@ app.post('/regulatory-attachment-publication-tasks', async (req,res, next) => {
               dct:format ${sparqlEscapeString('application/html')};
               nfo:fileSize ${fileSize};
               dbpedia:fileExtension ${sparqlEscapeString('html')};
-              dct:created ${sparqlEscapeDateTime(now)};
-              nie:dataSource ${sparqlEscapeUri(physicalFileUri)}.
+              dct:created ${sparqlEscapeDateTime(now)}.
+              
             ${sparqlEscapeUri(physicalFileUri)} a nfo:FileDataObject;
               mu:uuid ${sparqlEscapeString(virtualFileUuid)};
               nfo:fileName ${sparqlEscapeString(fileName)};
               dct:format ${sparqlEscapeString('application/html')};
               nfo:fileSize ${fileSize};
               dbpedia:fileExtension ${sparqlEscapeString('html')};
-              dct:created ${sparqlEscapeDateTime(now)}.
+              dct:created ${sparqlEscapeDateTime(now)};
+              nie:dataSource ${sparqlEscapeUri(virtualFileUri)}.
           }
         }
       `;
@@ -165,15 +166,16 @@ app.post('/regulatory-attachment-publication-tasks', async (req,res, next) => {
               dct:format ${sparqlEscapeString('application/html')};
               nfo:fileSize ${fileSize};
               dbpedia:fileExtension ${sparqlEscapeString('html')};
-              dct:created ${sparqlEscapeDateTime(now)};
-              nie:dataSource ${sparqlEscapeUri(physicalFileUri)}.
+              dct:created ${sparqlEscapeDateTime(now)}.
+              
             ${sparqlEscapeUri(physicalFileUri)} a nfo:FileDataObject;
               mu:uuid ${sparqlEscapeString(virtualFileUuid)};
               nfo:fileName ${sparqlEscapeString(fileName)};
               dct:format ${sparqlEscapeString('application/html')};
               nfo:fileSize ${fileSize};
               dbpedia:fileExtension ${sparqlEscapeString('html')};
-              dct:created ${sparqlEscapeDateTime(now)}.
+              dct:created ${sparqlEscapeDateTime(now)};
+              nie:dataSource ${sparqlEscapeUri(virtualFileUri)}.
           }
         }
       `;
