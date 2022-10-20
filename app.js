@@ -8,70 +8,14 @@ import Task, {
 } from './models/task';
 import { ensureTask } from './util/task-utils';
 
-app.get('/preview/regulatory-attachment/:uuid', async (req,res) => {
-  const reglementUuid = req.params.uuid;
-  var myQuery = `
-    PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-    PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-    PREFIX pav: <http://purl.org/pav/>
-    PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
-    SELECT ?filename
-    WHERE {
-      ?reglement mu:uuid ${sparqlEscapeString(reglementUuid)}.
-      ?reglement ext:publishedVersion ?publishedContainer .
-      ?publishedContainer  ext:currentVersion ?currentVersion.
-      ?currentVersion ext:content ?virtualFile.
-      ?virtualFile nfo:fileName ?filename.
-    }
-  `;
-  const result = await query(myQuery);
-  const bindings = result.results.bindings[0];
-  if(!bindings || !bindings.filename) {
-    res.status(404).end(); 
-    return;
-  }
-  const filename = bindings.filename.value;
-  const filePath = `/share/${filename}`;
-  const content = fs.readFileSync(filePath, {encoding:'utf8', flag:'r'});
-  res.json({content});
-});
-
-app.get('/preview/regulatory-attachment-container/:uuid', async (req,res) => {
-  const reglementUuid = req.params.uuid;
-  var myQuery = `
-    PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-    PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-    PREFIX pav: <http://purl.org/pav/>
-    PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
-    SELECT ?filename
-    WHERE {
-      ?publishedContainer mu:uuid ${sparqlEscapeString(reglementUuid)}.
-      ?publishedContainer  ext:currentVersion ?currentVersion.
-      ?currentVersion ext:content ?virtualFile.
-      ?virtualFile nfo:fileName ?filename.
-    }
-  `;
-  const result = await query(myQuery);
-  const bindings = result.results.bindings[0];
-  if(!bindings || !bindings.filename) {
-    res.status(404).end(); 
-    return;
-  }
-  const filename = bindings.filename.value;
-  const filePath = `/share/${filename}`;
-  const content = fs.readFileSync(filePath, {encoding:'utf8', flag:'r'});
-  res.json({content});
-});
-
-
-app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
+app.post('/regulatory-attachment-publication-tasks', async (req,res, next) => {
   let reglementUri;
   let template;
   let publishingTask;
   let graphUri;
   let title;
   try {
-    const reglementUuid = req.params.uuid;
+    const reglementUuid = req.body.data.relationships['regulatory-attachment'].data.id;
     var myQuery = `
       PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
       PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
@@ -155,6 +99,7 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
         PREFIX dbpedia: <http://dbpedia.org/ontology/>
         INSERT DATA {
           GRAPH <http://mu.semte.ch/graphs/public> {
+            ${sparqlEscapeUri(publishingTask.uri)} ext:publishedVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
             ${sparqlEscapeUri(publishedContainerUri)} ext:currentVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
             ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} a ext:PublishedRegulatoryAttachment;
               mu:uuid ${sparqlEscapeString(publishedRegulatoryAttachmentUuid)};
@@ -170,15 +115,16 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
               dct:format ${sparqlEscapeString('application/html')};
               nfo:fileSize ${fileSize};
               dbpedia:fileExtension ${sparqlEscapeString('html')};
-              dct:created ${sparqlEscapeDateTime(now)};
-              nie:dataSource ${sparqlEscapeUri(physicalFileUri)}.
+              dct:created ${sparqlEscapeDateTime(now)}.
+              
             ${sparqlEscapeUri(physicalFileUri)} a nfo:FileDataObject;
               mu:uuid ${sparqlEscapeString(virtualFileUuid)};
               nfo:fileName ${sparqlEscapeString(fileName)};
               dct:format ${sparqlEscapeString('application/html')};
               nfo:fileSize ${fileSize};
               dbpedia:fileExtension ${sparqlEscapeString('html')};
-              dct:created ${sparqlEscapeDateTime(now)}.
+              dct:created ${sparqlEscapeDateTime(now)};
+              nie:dataSource ${sparqlEscapeUri(virtualFileUri)}.
           }
         }
       `;
@@ -202,6 +148,7 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
             ${sparqlEscapeUri(reglementUri)} ext:publishedVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)}.
           }
           GRAPH <http://mu.semte.ch/graphs/public> {
+            ${sparqlEscapeUri(publishingTask.uri)} ext:publishedVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
             ${sparqlEscapeUri(reglementUri)} ext:publishedVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)}.
             ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)} a ext:PublishedRegulatoryAttachmentContainer;
               mu:uuid ${sparqlEscapeString(publishedRegulatoryAttachmentContainerUuid)};
@@ -219,15 +166,16 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
               dct:format ${sparqlEscapeString('application/html')};
               nfo:fileSize ${fileSize};
               dbpedia:fileExtension ${sparqlEscapeString('html')};
-              dct:created ${sparqlEscapeDateTime(now)};
-              nie:dataSource ${sparqlEscapeUri(physicalFileUri)}.
+              dct:created ${sparqlEscapeDateTime(now)}.
+              
             ${sparqlEscapeUri(physicalFileUri)} a nfo:FileDataObject;
               mu:uuid ${sparqlEscapeString(virtualFileUuid)};
               nfo:fileName ${sparqlEscapeString(fileName)};
               dct:format ${sparqlEscapeString('application/html')};
               nfo:fileSize ${fileSize};
               dbpedia:fileExtension ${sparqlEscapeString('html')};
-              dct:created ${sparqlEscapeDateTime(now)}.
+              dct:created ${sparqlEscapeDateTime(now)};
+              nie:dataSource ${sparqlEscapeUri(virtualFileUri)}.
           }
         }
       `;
@@ -240,34 +188,7 @@ app.post('/publish/regulatory-attachment/:uuid', async (req,res, next) => {
   }
 });
 
-app.post('/invalidate/regulatory-attachment/:uuid', async (req,res) => {
-  const reglementUuid = req.params.uuid;
-  var myQuery = `
-    PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-    PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-    PREFIX pav: <http://purl.org/pav/>
-    SELECT ?content ?reglement ?graph
-    WHERE {
-        ?reglement mu:uuid ${sparqlEscapeString(reglementUuid)};
-          ext:hasDocumentContainer ?documentContainer.
-    }
-  `;
-  const result = await query(myQuery);
-  const bindings = result.results.bindings[0];
-  const reglementUri = bindings.reglement.value;
-  const insertValidThroughQuery = `
-    PREFIX schema: <http://schema.org/>
-    INSERT DATA {
-      GRAPH <http://mu.semte.ch/graphs/public> {
-        ${sparqlEscapeUri(reglementUri)} schema:validThrough ${sparqlEscapeDateTime(new Date())}
-      }
-    }
-  `;
-  await query(insertValidThroughQuery);
-  res.json({status: 'success'});
-});
-
-app.get('/publication-tasks/:id', async function (req, res) {
+app.get('/regulatory-attachment-publication-tasks/:id', async function (req, res) {
   const taskUuid = req.params.id;
   const task = await Task.find(taskUuid);
   if (task) {
@@ -277,6 +198,9 @@ app.get('/publication-tasks/:id', async function (req, res) {
         status: task.status,
         type: task.type,
         taskType: task.type,
+        relationships: {
+          "regulatory-attachment": task.regulatoryAttachmentPublication,
+        }
       }
     });
   }

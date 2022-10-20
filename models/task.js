@@ -11,7 +11,7 @@ export const TASK_STATUS_FAILURE =  "http://lblod.data.gift/besluit-publicatie-m
 export const TASK_STATUS_CREATED =  "http://lblod.data.gift/besluit-publicatie-melding-statuses/created";
 export const TASK_STATUS_SUCCESS =  "http://lblod.data.gift/besluit-publicatie-melding-statuses/success";
 export const TASK_STATUS_RUNNING = "http://lblod.data.gift/besluit-publicatie-melding-statuses/ongoing";
-export const TASK_TYPE_REGLEMENT_PUBLISH = "regulatoryStatementPublication";
+export const TASK_TYPE_REGLEMENT_PUBLISH = "regulatory-attachment-publication-tasks";
 
 export default class Task {
   static async create(reglementUri) {
@@ -47,7 +47,8 @@ export default class Task {
      PREFIX    task: <http://redpencil.data.gift/vocabularies/tasks/>
      PREFIX    dct: <http://purl.org/dc/terms/>
      PREFIX    adms: <http://www.w3.org/ns/adms#>
-     SELECT ?uri ?uuid ?type ?involves ?status ?modified ?created WHERE {
+     PREFIX    ext: <http://mu.semte.ch/vocabularies/ext/>
+     SELECT ?uri ?uuid ?type ?involves ?status ?modified ?created ?regulatoryAttachmentPublication WHERE {
        BIND(${sparqlEscapeString(uuid)} AS ?uuid)
        ?uri a task:Task;
             mu:uuid ?uuid;
@@ -57,6 +58,9 @@ export default class Task {
             nuao:involves ?involves;
             dct:creator <http://lblod.data.gift/services/reglement-publish-service>;
             adms:status ?status.
+        OPTIONAL {
+          ?uri ext:publishedVersion ?regulatoryAttachmentPublication.
+        }
      }
    `);
     if (result.results.bindings.length) {
@@ -73,7 +77,8 @@ export default class Task {
      PREFIX    task: <http://redpencil.data.gift/vocabularies/tasks/>
      PREFIX    dct: <http://purl.org/dc/terms/>
      PREFIX    adms: <http://www.w3.org/ns/adms#>
-     SELECT ?uri ?uuid ?type ?involves ?status ?modified ?created WHERE {
+     PREFIX    ext: <http://mu.semte.ch/vocabularies/ext/>
+     SELECT ?uri ?uuid ?involves ?status ?modified ?created ?regulatoryAttachmentPublication WHERE {
        ?uri a task:Task;
             mu:uuid ?uuid;
             dct:created ?created;
@@ -82,11 +87,17 @@ export default class Task {
             nuao:involves ${sparqlEscapeUri(reglementUri)};
             dct:creator <http://lblod.data.gift/services/reglement-publish-service>;
             adms:status ?status.
+        OPTIONAL {
+          ?uri ext:publishedVersion ?regulatoryAttachmentPublication.
+        }
        ${userUri ? `?uri nuao:involves ${sparqlEscapeUri(userUri)}.` : ''}
      }
    `);
     if (result.results.bindings.length) {
-      return Task.fromBinding({...result.results.bindings[0], type: TASK_TYPE_REGLEMENT_PUBLISH, involves: reglementUri});
+      return Task.fromBinding({...result.results.bindings[0], 
+        type: { value: TASK_TYPE_REGLEMENT_PUBLISH }, 
+        involves: { value: reglementUri }
+      });
     }
     else
       return null;
@@ -100,11 +111,12 @@ export default class Task {
       modified: binding.modified.value,
       status: binding.status.value,
       involves: binding.involves.value,
-      type: binding.type.value
+      type: binding.type.value,
+      regulatoryAttachmentPublication: binding.regulatoryAttachmentPublication ? binding.regulatoryAttachmentPublication.value : undefined,
     });
   }
 
-  constructor({id, uri, created, status, modified, type, involves}) {
+  constructor({id, uri, created, status, modified, type, involves, regulatoryAttachmentPublication}) {
     this.id = id;
     this.type = type;
     this.involves = involves;
@@ -112,6 +124,7 @@ export default class Task {
     this.modified = modified;
     this.status = status;
     this.uri = uri;
+    this.regulatoryAttachmentPublication = regulatoryAttachmentPublication;
   }
 
   async updateStatus(status, reason) {
