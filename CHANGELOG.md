@@ -1,5 +1,14 @@
 
 
+
+## 2.0.0 (2022-10-20)
+
+#### :rocket: Enhancement
+* [#6](https://github.com/lblod/reglement-publish-service/pull/6) Feature: refactor and json api compliancy ([@elpoelma](https://github.com/elpoelma))
+
+#### Committers: 1
+- Elena Poelman ([@elpoelma](https://github.com/elpoelma))
+
 ## 1.2.1 (2022-10-04)
 
 #### :bug: Bug Fix
