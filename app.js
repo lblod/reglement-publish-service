@@ -57,8 +57,8 @@ app.post('/regulatory-attachment-publication-tasks', async (req,res, next) => {
       PREFIX pav: <http://purl.org/pav/>
       SELECT ?publishedContainer ?currentVersion
       WHERE {
-        ${sparqlEscapeUri(reglementUri)} ext:publishedVersion ?publishedContainer .
-        ?publishedContainer  ext:currentVersion ?currentVersion.
+        ?publishedContainer prov:derivedFrom ${sparqlEscapeUri(reglementUri)}.
+        ?publishedContainer  pav:hasCurrentVersion ?currentVersion.
       }
     `;
     
@@ -79,10 +79,10 @@ app.post('/regulatory-attachment-publication-tasks', async (req,res, next) => {
       const publishedRegulatoryAttachmentUri = `http://data.lblod.info/published-regulatory-attachment/${publishedRegulatoryAttachmentUuid}`;
       const now = new Date();
       const deleteCurrentVersionQuery = `
-        PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+        PREFIX pav: <http://purl.org/pav/>
         DELETE WHERE {
           GRAPH <http://mu.semte.ch/graphs/public> {
-            ${sparqlEscapeUri(publishedContainerUri)} ext:currentVersion ?currentVersion.
+            ${sparqlEscapeUri(publishedContainerUri)} pav:hasCurrentVersion ?currentVersion.
           }
         }
       `;
@@ -99,32 +99,29 @@ app.post('/regulatory-attachment-publication-tasks', async (req,res, next) => {
         PREFIX dbpedia: <http://dbpedia.org/ontology/>
         INSERT DATA {
           GRAPH <http://mu.semte.ch/graphs/public> {
-            ${sparqlEscapeUri(publishingTask.uri)} ext:publishedVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
-            ${sparqlEscapeUri(publishedContainerUri)} ext:currentVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
-            ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} a ext:PublishedRegulatoryAttachment;
+            ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} prov:derivedFrom ${sparqlEscapeUri(publishingTask.uri)}.
+            ${sparqlEscapeUri(publishedContainerUri)} pav:hasCurrentVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
+            ${sparqlEscapeUri(publishedContainerUri)} pav:hasVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
+            ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} a gn:ReglementaireBijlageTemplateVersie.
+            ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} a nfo:FileDataObject;
               mu:uuid ${sparqlEscapeString(publishedRegulatoryAttachmentUuid)};
               dct:title ${sparqlEscapeString(title)};
-              ext:content ${sparqlEscapeUri(virtualFileUri)};
-              pav:createdOn ${sparqlEscapeDateTime(now)};
-              pav:lastUpdateOn ${sparqlEscapeDateTime(now)};
               pav:previousVersion ${sparqlEscapeUri(currentVersionUri)};
               ext:container  ${sparqlEscapeUri(publishedContainerUri)}.
-            ${sparqlEscapeUri(virtualFileUri)} a nfo:FileDataObject;
-              mu:uuid ${sparqlEscapeString(virtualFileUuid)};
               nfo:fileName ${sparqlEscapeString(fileName)};
               dct:format ${sparqlEscapeString('application/html')};
               nfo:fileSize ${fileSize};
-              dbpedia:fileExtension ${sparqlEscapeString('html')};
-              dct:created ${sparqlEscapeDateTime(now)}.
-              
+              dbpedia:extension ${sparqlEscapeString('html')};
+              nfo:fileCreated ${sparqlEscapeDateTime(now)};
+              prov:derivedFrom ${sparqlEscapeUri(myQuery.results.bindings[0].editorDocument.value)}
             ${sparqlEscapeUri(physicalFileUri)} a nfo:FileDataObject;
-              mu:uuid ${sparqlEscapeString(virtualFileUuid)};
+              mu:uuid ${sparqlEscapeString(publishedRegulatoryAttachmentUuid)};
               nfo:fileName ${sparqlEscapeString(fileName)};
               dct:format ${sparqlEscapeString('application/html')};
               nfo:fileSize ${fileSize};
-              dbpedia:fileExtension ${sparqlEscapeString('html')};
-              dct:created ${sparqlEscapeDateTime(now)};
-              nie:dataSource ${sparqlEscapeUri(virtualFileUri)}.
+              dbpedia:extension ${sparqlEscapeString('html')};
+              nfo:fileCreated ${sparqlEscapeDateTime(now)};
+              nie:dataSource ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
           }
         }
       `;
@@ -145,29 +142,27 @@ app.post('/regulatory-attachment-publication-tasks', async (req,res, next) => {
         PREFIX dbpedia: <http://dbpedia.org/ontology/>
         INSERT DATA {
           GRAPH ${sparqlEscapeUri(graphUri)} {
-            ${sparqlEscapeUri(reglementUri)} ext:publishedVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)}.
+            ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} prov:derivedFrom ${sparqlEscapeUri(reglementUri)}.
           }
           GRAPH <http://mu.semte.ch/graphs/public> {
             ${sparqlEscapeUri(publishingTask.uri)} ext:publishedVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
-            ${sparqlEscapeUri(reglementUri)} ext:publishedVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)}.
+            ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} prov:derivedFrom ${sparqlEscapeUri(reglementUri)}.
             ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)} a ext:PublishedRegulatoryAttachmentContainer;
               mu:uuid ${sparqlEscapeString(publishedRegulatoryAttachmentContainerUuid)};
-              ext:currentVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
+              pav:hasCurrentVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)};
+              pav:hasVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)};
+              prov:derivedFrom ${sparqlEscapeUri(myQuery.results.bindings[0].documentContainer.value)}.
             ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} a ext:PublishedRegulatoryAttachment;
+            ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} a nfo:FileDataObject;
               mu:uuid ${sparqlEscapeString(publishedRegulatoryAttachmentUuid)};
               dct:title ${sparqlEscapeString(title)};
-              ext:content ${sparqlEscapeUri(virtualFileUri)};
-              pav:createdOn ${sparqlEscapeDateTime(now)};
-              pav:lastUpdateOn ${sparqlEscapeDateTime(now)};
               ext:container  ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)}.
-            ${sparqlEscapeUri(virtualFileUri)} a nfo:FileDataObject;
-              mu:uuid ${sparqlEscapeString(virtualFileUuid)};
               nfo:fileName ${sparqlEscapeString(fileName)};
               dct:format ${sparqlEscapeString('application/html')};
               nfo:fileSize ${fileSize};
               dbpedia:fileExtension ${sparqlEscapeString('html')};
-              dct:created ${sparqlEscapeDateTime(now)}.
-              
+              dct:created ${sparqlEscapeDateTime(now)};
+              prov:derivedFrom ${sparqlEscapeUri(myQuery.results.bindings[0].editorDocument.value)}.
             ${sparqlEscapeUri(physicalFileUri)} a nfo:FileDataObject;
               mu:uuid ${sparqlEscapeString(virtualFileUuid)};
               nfo:fileName ${sparqlEscapeString(fileName)};
