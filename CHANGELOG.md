@@ -1,6 +1,15 @@
 
 
 
+
+## 3.0.0 (2022-11-03)
+
+#### :rocket: Enhancement
+* [#7](https://github.com/lblod/reglement-publish-service/pull/7) Feature/new rdfa model ([@lagartoverde](https://github.com/lagartoverde))
+
+#### Committers: 1
+- Oscar Rodriguez Villalobos ([@lagartoverde](https://github.com/lagartoverde))
+
 ## 2.0.0 (2022-10-20)
 
 #### :rocket: Enhancement
