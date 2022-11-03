@@ -160,7 +160,7 @@ app.post('/regulatory-attachment-publication-tasks', async (req,res, next) => {
               dct:format ${sparqlEscapeString('application/html')};
               nfo:fileSize ${fileSize};
               dbpedia:fileExtension ${sparqlEscapeString('html')};
-              dct:created ${sparqlEscapeDateTime(now)};
+              nfo:fileCreated ${sparqlEscapeDateTime(now)};
               prov:derivedFrom ${sparqlEscapeUri(editorDocumentUri)}.
             ${sparqlEscapeUri(physicalFileUri)} a nfo:FileDataObject;
               mu:uuid ${sparqlEscapeString(physicalFileUuid)};
@@ -168,7 +168,7 @@ app.post('/regulatory-attachment-publication-tasks', async (req,res, next) => {
               dct:format ${sparqlEscapeString('application/html')};
               nfo:fileSize ${fileSize};
               dbpedia:fileExtension ${sparqlEscapeString('html')};
-              dct:created ${sparqlEscapeDateTime(now)};
+              nfo:fileCreated ${sparqlEscapeDateTime(now)};
               nie:dataSource ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
           }
         }
