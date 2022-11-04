@@ -2,6 +2,15 @@
 
 
 
+
+## 3.0.1 (2022-11-04)
+
+#### :bug: Bug Fix
+* [#8](https://github.com/lblod/reglement-publish-service/pull/8) add valid through to the old version when publishing a new one ([@lagartoverde](https://github.com/lagartoverde))
+
+#### Committers: 1
+- Oscar Rodriguez Villalobos ([@lagartoverde](https://github.com/lagartoverde))
+
 ## 3.0.0 (2022-11-03)
 
 #### :rocket: Enhancement
