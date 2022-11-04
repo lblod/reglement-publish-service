@@ -103,12 +103,12 @@ app.post('/regulatory-attachment-publication-tasks', async (req,res, next) => {
             ${sparqlEscapeUri(publishingTask.uri)} ext:publishedVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
             ${sparqlEscapeUri(publishedContainerUri)} pav:hasCurrentVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
             ${sparqlEscapeUri(publishedContainerUri)} pav:hasVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
+            ${sparqlEscapeUri(currentVersionUri)} schema:validThrough ${sparqlEscapeDateTime(now)}.
             ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} a gn:ReglementaireBijlageTemplateVersie.
             ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} a nfo:FileDataObject;
               mu:uuid ${sparqlEscapeString(publishedRegulatoryAttachmentUuid)};
               dct:title ${sparqlEscapeString(title)};
               pav:previousVersion ${sparqlEscapeUri(currentVersionUri)};
-              ext:container  ${sparqlEscapeUri(publishedContainerUri)};
               nfo:fileName ${sparqlEscapeString(fileName)};
               dct:format ${sparqlEscapeString('application/html')};
               nfo:fileSize ${fileSize};
@@ -155,7 +155,6 @@ app.post('/regulatory-attachment-publication-tasks', async (req,res, next) => {
             ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} a nfo:FileDataObject;
               mu:uuid ${sparqlEscapeString(publishedRegulatoryAttachmentUuid)};
               dct:title ${sparqlEscapeString(title)};
-              ext:container  ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)};
               nfo:fileName ${sparqlEscapeString(fileName)};
               dct:format ${sparqlEscapeString('application/html')};
               nfo:fileSize ${fileSize};
