@@ -98,6 +98,7 @@ app.post('/regulatory-attachment-publication-tasks', async (req,res, next) => {
         PREFIX dbpedia: <http://dbpedia.org/ontology/>
         PREFIX prov: <http://www.w3.org/ns/prov#>
         PREFIX gn: <http://data.lblod.info/vocabularies/gelinktnotuleren/>
+        PREFIX schema: <http://schema.org/>
         INSERT DATA {
           GRAPH <http://mu.semte.ch/graphs/public> {
             ${sparqlEscapeUri(publishingTask.uri)} ext:publishedVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
