@@ -3,6 +3,15 @@
 
 
 
+
+## 3.0.2 (2022-11-09)
+
+#### :bug: Bug Fix
+* [#9](https://github.com/lblod/reglement-publish-service/pull/9) Prefix schema not defined ([@lagartoverde](https://github.com/lagartoverde))
+
+#### Committers: 1
+- Oscar Rodriguez Villalobos ([@lagartoverde](https://github.com/lagartoverde))
+
 ## 3.0.1 (2022-11-04)
 
 #### :bug: Bug Fix
