@@ -1,16 +1,15 @@
 import Task from "../models/task";
 
 /**
- * @param meeting
+ * @param {string} documentContainerUri
  * @param {string} taskType
- * @param {string} [userUri]
  * */
-export async function ensureTask(reglementUri, userUri) {
-  let task = userUri
-    ? await Task.query({ reglementUri: reglementUri, userUri })
-    : await Task.query({ reglementUri: reglementUri });
+export async function ensureTask(documentContainerUri, taskType) {
+  let task = await Task.query({reglementUri: documentContainerUri, taskType});
+
   if (!task) {
-    task = await Task.create(reglementUri);
+    task = await Task.create(documentContainerUri, taskType);
   }
+
   return task;
 }

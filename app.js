@@ -1,14 +1,49 @@
-import { app, sparqlEscapeString, sparqlEscapeUri, sparqlEscapeDateTime, errorHandler, uuid } from 'mu';
-import { querySudo as query, updateSudo as update } from '@lblod/mu-auth-sudo';
+import {app, sparqlEscapeString, sparqlEscapeUri, sparqlEscapeDateTime, errorHandler, uuid} from 'mu';
+import {querySudo as query, updateSudo as update} from '@lblod/mu-auth-sudo';
 import fs from 'fs';
-import Task, { 
+import Task, {
   TASK_STATUS_FAILURE,
   TASK_STATUS_RUNNING,
-  TASK_STATUS_SUCCESS
+  TASK_STATUS_SUCCESS,
+  TASK_TYPE_REGLEMENT_PUBLISH,
+  TASK_TYPE_SNIPPET_PUBLISH
 } from './models/task';
-import { ensureTask } from './util/task-utils';
+import {ensureTask} from './util/task-utils';
 
-app.post('/regulatory-attachment-publication-tasks', async (req,res, next) => {
+const getPublishedVersion = async (documentContainerUri) => {
+  const publishedVersionQuery = `
+      PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+      PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+      PREFIX pav: <http://purl.org/pav/>
+      PREFIX prov: <http://www.w3.org/ns/prov#>
+      SELECT ?publishedContainer ?currentVersion
+      WHERE {
+        ?publishedContainer prov:derivedFrom ${sparqlEscapeUri(documentContainerUri)}.
+        ?publishedContainer  pav:hasCurrentVersion ?currentVersion.
+      }
+    `;
+
+  return await query(publishedVersionQuery);
+};
+
+const hasPublishedVersion = (publishedVersionResults) => publishedVersionResults.results.bindings[0] && publishedVersionResults.results.bindings[0].publishedContainer;
+
+const deletePublishedVersion = async (publishedVersionResults) => {
+  const publishedContainerUri = publishedVersionResults.results.bindings[0].publishedContainer.value;
+
+  const deleteCurrentVersionQuery = `
+        PREFIX pav: <http://purl.org/pav/>
+        DELETE WHERE {
+          GRAPH <http://mu.semte.ch/graphs/public> {
+            ${sparqlEscapeUri(publishedContainerUri)} pav:hasCurrentVersion ?currentVersion.
+          }
+        }
+      `;
+
+  await update(deleteCurrentVersionQuery);
+};
+
+app.post('/regulatory-attachment-publication-tasks', async (req, res, next) => {
   let documentContainerUri;
   let editorDocumentUri;
   let template;
@@ -37,8 +72,10 @@ app.post('/regulatory-attachment-publication-tasks', async (req,res, next) => {
     documentContainerUri = bindings.documentContainer.value;
     editorDocumentUri = bindings.editorDocument.value;
     title = bindings.title.value;
-    publishingTask = await ensureTask(documentContainerUri);
-    res.json({ data: { id: publishingTask.id, status: "accepted" , type: publishingTask.type}});
+
+    publishingTask = await ensureTask(documentContainerUri, TASK_TYPE_REGLEMENT_PUBLISH);
+
+    res.json({data: {id: publishingTask.id, status: "accepted", type: publishingTask.type}});
   } catch (err) {
     console.log(err);
     const error = new Error(
@@ -50,18 +87,8 @@ app.post('/regulatory-attachment-publication-tasks', async (req,res, next) => {
   }
   try {
     await publishingTask.updateStatus(TASK_STATUS_RUNNING);
-    var publishedVersionQuery = `
-      PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-      PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-      PREFIX pav: <http://purl.org/pav/>
-      PREFIX prov: <http://www.w3.org/ns/prov#>
-      SELECT ?publishedContainer ?currentVersion
-      WHERE {
-        ?publishedContainer prov:derivedFrom ${sparqlEscapeUri(documentContainerUri)}.
-        ?publishedContainer  pav:hasCurrentVersion ?currentVersion.
-      }
-    `;
-    
+
+    // Create a new file in the share folder with the template
     const fileUuid = uuid();
     const fileName = `${fileUuid}.html`;
     const filePath = `/share/${fileName}`;
@@ -69,24 +96,19 @@ app.post('/regulatory-attachment-publication-tasks', async (req,res, next) => {
     const fileSize = fs.statSync(filePath).size;
     const physicalFileUuid = uuid();
     const physicalFileUri = `share://${fileName}`;
-    const publishedVersionResults = await query(publishedVersionQuery);
+
+    const publishedVersionResults = await getPublishedVersion(documentContainerUri);
+
     let insertPublishedVersionQuery;
-    if(publishedVersionResults.results.bindings[0] && publishedVersionResults.results.bindings[0].publishedContainer) {
+
+    if (hasPublishedVersion(publishedVersionResults)) {
       const publishedContainerUri = publishedVersionResults.results.bindings[0].publishedContainer.value;
       const currentVersionUri = publishedVersionResults.results.bindings[0].currentVersion.value;
       const publishedRegulatoryAttachmentUuid = uuid();
       const publishedRegulatoryAttachmentUri = `http://data.lblod.info/published-regulatory-attachment/${publishedRegulatoryAttachmentUuid}`;
       const now = new Date();
-      const deleteCurrentVersionQuery = `
-        PREFIX pav: <http://purl.org/pav/>
-        DELETE WHERE {
-          GRAPH <http://mu.semte.ch/graphs/public> {
-            ${sparqlEscapeUri(publishedContainerUri)} pav:hasCurrentVersion ?currentVersion.
-          }
-        }
-      `;
 
-      await update(deleteCurrentVersionQuery);
+      await deletePublishedVersion(publishedVersionResults);
 
       insertPublishedVersionQuery = `
         PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
@@ -198,10 +220,174 @@ app.get('/regulatory-attachment-publication-tasks/:id', async function (req, res
         }
       }
     });
-  }
-  else {
+  } else {
     res.status(404).send(`task with id ${taskUuid} was not found`);
   }
 });
+
+/**
+ * @param {string} documentContainerUuid
+ */
+const getEditorDocument = async (documentContainerUuid) => {
+  const documentContainerQuery = `
+      PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+      PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+      PREFIX pav: <http://purl.org/pav/>
+      PREFIX dct: <http://purl.org/dc/terms/>
+      SELECT ?documentContainer ?editorDocument ?graph ?title ?content
+      WHERE {
+        GRAPH ?graph {
+          ?documentContainer mu:uuid ${sparqlEscapeString(documentContainerUuid)};
+            pav:hasCurrentVersion ?editorDocument.
+          ?editorDocument dct:title ?title ;
+              ext:editorDocumentContent ?content ;
+              pav:createdOn ?createdOn .
+        }
+      }
+    `;
+
+  const result = await query(documentContainerQuery);
+  return result.results.bindings[0];
+};
+
+
+const insertPublishedSnippetContainer = async ({
+  documentContainer,
+  editorDocument,
+  title,
+  content,
+  publishingTaskUri
+}) => {
+  const snippetContainerUuid = uuid();
+  const snippetContainerUri = `http://lblod.data.gift/published-snippet-containers/${snippetContainerUuid}`;
+
+  const snippetUuid = uuid();
+  const publishedSnippetUri = `http://lblod.data.gift/published-snippets/${snippetUuid}`;
+  const now = new Date();
+
+  const insertPublishedVersionQuery = `
+        PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+        PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+        PREFIX pav: <http://purl.org/pav/>
+        PREFIX dct: <http://purl.org/dc/terms/>
+        PREFIX prov: <http://www.w3.org/ns/prov#>
+        INSERT DATA {
+          GRAPH <http://mu.semte.ch/graphs/public> {
+            ${sparqlEscapeUri(publishingTaskUri)} ext:publishedVersion ${sparqlEscapeUri(publishedSnippetUri)}.
+            ${sparqlEscapeUri(snippetContainerUri)} a ext:PublishedSnippetContainer;
+              mu:uuid ${sparqlEscapeString(snippetContainerUuid)};
+              pav:hasCurrentVersion ${sparqlEscapeUri(publishedSnippetUri)};
+              pav:hasVersion ${sparqlEscapeUri(publishedSnippetUri)};
+              prov:derivedFrom ${sparqlEscapeUri(documentContainer.value)}.
+            ${sparqlEscapeUri(publishedSnippetUri)} a ext:PublishedSnippet;
+              mu:uuid ${sparqlEscapeString(snippetUuid)};
+              dct:title ${sparqlEscapeString(title.value)};
+              ext:editorDocumentContent ${sparqlEscapeString(content.value)};
+              pav:createdOn ${sparqlEscapeDateTime(now)};
+              prov:derivedFrom ${sparqlEscapeUri(editorDocument.value)}.
+          }
+        }
+      `;
+
+  await update(insertPublishedVersionQuery);
+};
+
+const updatePublishedSnippetContainer = async ({
+  editorDocument,
+  title,
+  content,
+  publishingTaskUri,
+  publishedVersionResults,
+}) => {
+  await deletePublishedVersion(publishedVersionResults);
+
+  const publishedContainerUri = publishedVersionResults.results.bindings[0].publishedContainer.value;
+
+  const snippetUuid = uuid();
+  const publishedSnippetUri = `http://lblod.data.gift/published-snippets/${snippetUuid}`;
+  const now = new Date();
+
+  const updatePublishedVersionQuery = `
+        PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+        PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+        PREFIX pav: <http://purl.org/pav/>
+        PREFIX dct: <http://purl.org/dc/terms/>
+        PREFIX prov: <http://www.w3.org/ns/prov#>
+        INSERT DATA {
+          GRAPH <http://mu.semte.ch/graphs/public> {
+            ${sparqlEscapeUri(publishingTaskUri)} ext:publishedVersion ${sparqlEscapeUri(publishedSnippetUri)}.
+            ${sparqlEscapeUri(publishedContainerUri)} pav:hasCurrentVersion ${sparqlEscapeUri(publishedSnippetUri)}.
+            ${sparqlEscapeUri(publishedContainerUri)} pav:hasVersion ${sparqlEscapeUri(publishedSnippetUri)}.
+            ${sparqlEscapeUri(publishedSnippetUri)} a ext:PublishedSnippet;
+              mu:uuid ${sparqlEscapeString(snippetUuid)};
+              dct:title ${sparqlEscapeString(title.value)};
+              ext:editorDocumentContent ${sparqlEscapeString(content.value)};
+              pav:createdOn ${sparqlEscapeDateTime(now)};
+              prov:derivedFrom ${sparqlEscapeUri(editorDocument.value)}.
+          }
+        }
+      `;
+
+  await update(updatePublishedVersionQuery);
+};
+
+
+app.post('/snippet-list-publication-tasks', async (req, res, next) => {
+  const documentContainerUuid = req.body.data.relationships['document-container'].data.id;
+
+  let publishingTask;
+
+  try {
+    const editorDocument = await getEditorDocument(documentContainerUuid);
+    const documentContainerUri = editorDocument.documentContainer.value;
+
+    const publishingTask = await ensureTask(documentContainerUri, TASK_TYPE_SNIPPET_PUBLISH);
+
+    await publishingTask.updateStatus(TASK_STATUS_RUNNING);
+    const publishedVersionResults = await getPublishedVersion(documentContainerUri);
+
+    if (hasPublishedVersion(publishedVersionResults)) {
+      await updatePublishedSnippetContainer({
+        ...editorDocument,
+        publishedVersionResults,
+        publishingTaskUri: publishingTask.uri
+      });
+    } else {
+      await insertPublishedSnippetContainer({...editorDocument, publishingTaskUri: publishingTask.uri});
+    }
+
+    await publishingTask.updateStatus(TASK_STATUS_SUCCESS);
+
+    res.json({data: {id: publishingTask.id, status: "accepted", type: publishingTask.type}});
+  } catch (error) {
+    console.log(error);
+    if (publishingTask) {
+      publishingTask.updateStatus(TASK_STATUS_FAILURE, error.message);
+    }
+    next(error);
+  }
+});
+
+app.get('/snippet-list-publication-tasks/:id', async function (req, res) {
+  const taskUuid = req.params.id;
+  const task = await Task.find(taskUuid);
+
+  if (task) {
+    res.status(200).send({
+      data: {
+        id: task.id,
+        status: task.status,
+        type: task.type,
+        taskType: task.type,
+        relationships: {
+          "document-container": task.regulatoryAttachmentPublication,
+        }
+      }
+    });
+  } else {
+    res.status(404).send(`task with id ${taskUuid} was not found`);
+  }
+});
+
 
 app.use(errorHandler);

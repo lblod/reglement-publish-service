@@ -11,10 +11,12 @@ export const TASK_STATUS_FAILURE =  "http://lblod.data.gift/besluit-publicatie-m
 export const TASK_STATUS_CREATED =  "http://lblod.data.gift/besluit-publicatie-melding-statuses/created";
 export const TASK_STATUS_SUCCESS =  "http://lblod.data.gift/besluit-publicatie-melding-statuses/success";
 export const TASK_STATUS_RUNNING = "http://lblod.data.gift/besluit-publicatie-melding-statuses/ongoing";
+
 export const TASK_TYPE_REGLEMENT_PUBLISH = "regulatory-attachment-publication-tasks";
+export const TASK_TYPE_SNIPPET_PUBLISH = "snippet-list-publication-tasks";
 
 export default class Task {
-  static async create(reglementUri) {
+  static async create(reglementUri, taskType = TASK_TYPE_REGLEMENT_PUBLISH) {
     const id = uuid();
     const uri = `http://lblod.data.gift/tasks/${id}`;
     const created = Date.now();
@@ -32,12 +34,13 @@ export default class Task {
                                                 dct:created ${sparqlEscapeDateTime(created)};
                                                 dct:modified ${sparqlEscapeDateTime(created)};
                                                 dct:creator <http://lblod.data.gift/services/reglement-publish-service>;
-                                                dct:type ${sparqlEscapeString(TASK_TYPE_REGLEMENT_PUBLISH)};
+                                                dct:type ${sparqlEscapeString(taskType)};
                                                 nuao:involves ${sparqlEscapeUri(reglementUri)}.
     }
   `;
     await update(queryString);
-    return new Task({id, type: TASK_TYPE_REGLEMENT_PUBLISH, involves: reglementUri, created, modified: created, status: TASK_STATUS_CREATED, uri});
+
+    return new Task({id, type: taskType, involves: reglementUri, created, modified: created, status: TASK_STATUS_CREATED, uri});
   }
 
   static async find(uuid) {
@@ -70,7 +73,7 @@ export default class Task {
       return null;
   }
 
-  static async query({reglementUri, userUri = null}) {
+  static async query({reglementUri, userUri = null, taskType = TASK_TYPE_REGLEMENT_PUBLISH}) {
     const result = await query(`
      PREFIX    mu: <http://mu.semte.ch/vocabularies/core/>
      PREFIX    nuao: <http://www.semanticdesktop.org/ontologies/2010/01/25/nuao#>
@@ -83,7 +86,7 @@ export default class Task {
             mu:uuid ?uuid;
             dct:created ?created;
             dct:modified ?modified;
-            dct:type ${sparqlEscapeString(TASK_TYPE_REGLEMENT_PUBLISH)};
+            dct:type ${sparqlEscapeString(taskType)};
             nuao:involves ${sparqlEscapeUri(reglementUri)};
             dct:creator <http://lblod.data.gift/services/reglement-publish-service>;
             adms:status ?status.
@@ -94,8 +97,8 @@ export default class Task {
      }
    `);
     if (result.results.bindings.length) {
-      return Task.fromBinding({...result.results.bindings[0], 
-        type: { value: TASK_TYPE_REGLEMENT_PUBLISH }, 
+      return Task.fromBinding({...result.results.bindings[0],
+        type: { value: taskType },
         involves: { value: reglementUri }
       });
     }
