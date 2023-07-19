@@ -1,5 +1,5 @@
-import {app, sparqlEscapeString, sparqlEscapeUri, sparqlEscapeDateTime, errorHandler, uuid} from 'mu';
-import {querySudo as query, updateSudo as update} from '@lblod/mu-auth-sudo';
+import {app, errorHandler, sparqlEscapeDateTime, sparqlEscapeString, sparqlEscapeUri, uuid} from 'mu';
+import {querySudo as query} from '@lblod/mu-auth-sudo';
 import fs from 'fs';
 import Task, {
   TASK_STATUS_FAILURE,
@@ -9,39 +9,13 @@ import Task, {
   TASK_TYPE_SNIPPET_PUBLISH
 } from './models/task';
 import {ensureTask} from './util/task-utils';
-
-const getPublishedVersion = async (documentContainerUri) => {
-  const publishedVersionQuery = `
-      PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-      PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-      PREFIX pav: <http://purl.org/pav/>
-      PREFIX prov: <http://www.w3.org/ns/prov#>
-      SELECT ?publishedContainer ?currentVersion
-      WHERE {
-        ?publishedContainer prov:derivedFrom ${sparqlEscapeUri(documentContainerUri)}.
-        ?publishedContainer  pav:hasCurrentVersion ?currentVersion.
-      }
-    `;
-
-  return await query(publishedVersionQuery);
-};
-
-const hasPublishedVersion = (publishedVersionResults) => publishedVersionResults.results.bindings[0] && publishedVersionResults.results.bindings[0].publishedContainer;
-
-const deletePublishedVersion = async (publishedVersionResults) => {
-  const publishedContainerUri = publishedVersionResults.results.bindings[0].publishedContainer.value;
-
-  const deleteCurrentVersionQuery = `
-        PREFIX pav: <http://purl.org/pav/>
-        DELETE WHERE {
-          GRAPH <http://mu.semte.ch/graphs/public> {
-            ${sparqlEscapeUri(publishedContainerUri)} pav:hasCurrentVersion ?currentVersion.
-          }
-        }
-      `;
-
-  await update(deleteCurrentVersionQuery);
-};
+import {
+  deletePublishedVersion,
+  getEditorDocument,
+  getPublishedVersion,
+  hasPublishedVersion
+} from "./util/common-sparql";
+import {insertPublishedSnippetContainer, updatePublishedSnippetContainer} from "./util/snippet-sparql";
 
 app.post('/regulatory-attachment-publication-tasks', async (req, res, next) => {
   let documentContainerUri;
@@ -224,113 +198,6 @@ app.get('/regulatory-attachment-publication-tasks/:id', async function (req, res
     res.status(404).send(`task with id ${taskUuid} was not found`);
   }
 });
-
-/**
- * @param {string} documentContainerUuid
- */
-const getEditorDocument = async (documentContainerUuid) => {
-  const documentContainerQuery = `
-      PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-      PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-      PREFIX pav: <http://purl.org/pav/>
-      PREFIX dct: <http://purl.org/dc/terms/>
-      SELECT ?documentContainer ?editorDocument ?graph ?title ?content
-      WHERE {
-        GRAPH ?graph {
-          ?documentContainer mu:uuid ${sparqlEscapeString(documentContainerUuid)};
-            pav:hasCurrentVersion ?editorDocument.
-          ?editorDocument dct:title ?title ;
-              ext:editorDocumentContent ?content ;
-              pav:createdOn ?createdOn .
-        }
-      }
-    `;
-
-  const result = await query(documentContainerQuery);
-  return result.results.bindings[0];
-};
-
-
-const insertPublishedSnippetContainer = async ({
-  documentContainer,
-  editorDocument,
-  title,
-  content,
-  publishingTaskUri
-}) => {
-  const snippetContainerUuid = uuid();
-  const snippetContainerUri = `http://lblod.data.gift/published-snippet-containers/${snippetContainerUuid}`;
-
-  const snippetUuid = uuid();
-  const publishedSnippetUri = `http://lblod.data.gift/published-snippets/${snippetUuid}`;
-  const now = new Date();
-
-  const insertPublishedVersionQuery = `
-        PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-        PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-        PREFIX pav: <http://purl.org/pav/>
-        PREFIX dct: <http://purl.org/dc/terms/>
-        PREFIX prov: <http://www.w3.org/ns/prov#>
-        INSERT DATA {
-          GRAPH <http://mu.semte.ch/graphs/public> {
-            ${sparqlEscapeUri(publishingTaskUri)} ext:publishedVersion ${sparqlEscapeUri(publishedSnippetUri)}.
-            ${sparqlEscapeUri(snippetContainerUri)} a ext:PublishedSnippetContainer;
-              mu:uuid ${sparqlEscapeString(snippetContainerUuid)};
-              pav:hasCurrentVersion ${sparqlEscapeUri(publishedSnippetUri)};
-              pav:hasVersion ${sparqlEscapeUri(publishedSnippetUri)};
-              prov:derivedFrom ${sparqlEscapeUri(documentContainer.value)}.
-            ${sparqlEscapeUri(publishedSnippetUri)} a ext:PublishedSnippet;
-              mu:uuid ${sparqlEscapeString(snippetUuid)};
-              dct:title ${sparqlEscapeString(title.value)};
-              ext:editorDocumentContent ${sparqlEscapeString(content.value)};
-              pav:createdOn ${sparqlEscapeDateTime(now)};
-              prov:derivedFrom ${sparqlEscapeUri(editorDocument.value)}.
-          }
-        }
-      `;
-
-  await update(insertPublishedVersionQuery);
-};
-
-const updatePublishedSnippetContainer = async ({
-  editorDocument,
-  title,
-  content,
-  publishingTaskUri,
-  publishedVersionResults,
-}) => {
-  await deletePublishedVersion(publishedVersionResults);
-
-  const publishedContainerUri = publishedVersionResults.results.bindings[0].publishedContainer.value;
-
-  const snippetUuid = uuid();
-  const publishedSnippetUri = `http://lblod.data.gift/published-snippets/${snippetUuid}`;
-  const now = new Date();
-
-  const updatePublishedVersionQuery = `
-        PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-        PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-        PREFIX pav: <http://purl.org/pav/>
-        PREFIX dct: <http://purl.org/dc/terms/>
-        PREFIX prov: <http://www.w3.org/ns/prov#>
-        INSERT DATA {
-          GRAPH <http://mu.semte.ch/graphs/public> {
-            ${sparqlEscapeUri(publishingTaskUri)} ext:publishedVersion ${sparqlEscapeUri(publishedSnippetUri)}.
-            ${sparqlEscapeUri(publishedContainerUri)} pav:hasCurrentVersion ${sparqlEscapeUri(publishedSnippetUri)}.
-            ${sparqlEscapeUri(publishedContainerUri)} pav:hasVersion ${sparqlEscapeUri(publishedSnippetUri)}.
-            ${sparqlEscapeUri(publishedSnippetUri)} a ext:PublishedSnippet;
-              mu:uuid ${sparqlEscapeString(snippetUuid)};
-              dct:title ${sparqlEscapeString(title.value)};
-              ext:editorDocumentContent ${sparqlEscapeString(content.value)};
-              pav:createdOn ${sparqlEscapeDateTime(now)};
-              prov:derivedFrom ${sparqlEscapeUri(editorDocument.value)}.
-          }
-        }
-      `;
-
-  await update(updatePublishedVersionQuery);
-};
-
 
 app.post('/snippet-list-publication-tasks', async (req, res, next) => {
   const documentContainerUuid = req.body.data.relationships['document-container'].data.id;
