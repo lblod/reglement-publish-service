@@ -54,6 +54,7 @@ export const updatePublishedSnippetContainer = async ({
   await deletePublishedVersion(publishedVersionResults);
 
   const publishedContainerUri = publishedVersionResults.results.bindings[0].publishedContainer.value;
+  const previousVersionUri = publishedVersionResults.results.bindings[0].currentVersion.value;
 
   const snippetUuid = uuid();
   const publishedSnippetUri = `http://lblod.data.gift/published-snippets/${snippetUuid}`;
@@ -75,6 +76,7 @@ export const updatePublishedSnippetContainer = async ({
               dct:title ${sparqlEscapeString(title.value)};
               ext:editorDocumentContent ${sparqlEscapeString(content.value)};
               pav:createdOn ${sparqlEscapeDateTime(now)};
+              pav:previousVersion ${sparqlEscapeUri(previousVersionUri)};
               prov:derivedFrom ${sparqlEscapeUri(editorDocument.value)}.
           }
         }
