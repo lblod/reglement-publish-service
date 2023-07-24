@@ -4,6 +4,19 @@
 
 
 
+
+## 3.1.0 (2023-07-24)
+
+#### :rocket: Enhancement
+* [#10](https://github.com/lblod/reglement-publish-service/pull/10) GN-4323: Publish snippet to public space ([@dkozickis](https://github.com/dkozickis))
+
+#### :memo: Documentation
+* [#2](https://github.com/lblod/reglement-publish-service/pull/2) Add missing endpoint to readme ([@abeforgit](https://github.com/abeforgit))
+
+#### Committers: 2
+- Arne Bertrand ([@abeforgit](https://github.com/abeforgit))
+- Deniss Kozickis ([@dkozickis](https://github.com/dkozickis))
+
 ## 3.0.2 (2022-11-09)
 
 #### :bug: Bug Fix
