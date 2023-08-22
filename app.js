@@ -218,6 +218,7 @@ app.post('/snippet-list-publication-tasks', async (req, res, next) => {
 
     if (hasPublishedVersion(publishedVersionResults)) {
       await updatePublishedSnippetContainer({
+        ...snippetList,
         ...editorDocument,
         publishedVersionResults,
         publishingTaskUri: publishingTask.uri
