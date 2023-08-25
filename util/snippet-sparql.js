@@ -6,6 +6,7 @@ import {deletePublishedVersion} from "./common-sparql";
 export const insertPublishedSnippetContainer = async ({
   documentContainer,
   editorDocument,
+  snippetList,
   title,
   content,
   publishingTaskUri
@@ -30,6 +31,7 @@ export const insertPublishedSnippetContainer = async ({
               mu:uuid ${sparqlEscapeString(snippetContainerUuid)};
               pav:hasCurrentVersion ${sparqlEscapeUri(publishedSnippetUri)};
               pav:hasVersion ${sparqlEscapeUri(publishedSnippetUri)};
+              ext:fromSnippetList ${sparqlEscapeUri(snippetList.value)};
               prov:derivedFrom ${sparqlEscapeUri(documentContainer.value)}.
             ${sparqlEscapeUri(publishedSnippetUri)} a ext:PublishedSnippet;
               mu:uuid ${sparqlEscapeString(snippetUuid)};
@@ -46,6 +48,7 @@ export const insertPublishedSnippetContainer = async ({
 
 export const updatePublishedSnippetContainer = async ({
   editorDocument,
+  snippetList,
   title,
   content,
   publishingTaskUri,
@@ -71,6 +74,7 @@ export const updatePublishedSnippetContainer = async ({
             ${sparqlEscapeUri(publishingTaskUri)} ext:publishedVersion ${sparqlEscapeUri(publishedSnippetUri)}.
             ${sparqlEscapeUri(publishedContainerUri)} pav:hasCurrentVersion ${sparqlEscapeUri(publishedSnippetUri)}.
             ${sparqlEscapeUri(publishedContainerUri)} pav:hasVersion ${sparqlEscapeUri(publishedSnippetUri)}.
+            ${sparqlEscapeUri(publishedContainerUri)} ext:fromSnippetList ${sparqlEscapeUri(snippetList.value)}.
             ${sparqlEscapeUri(publishedSnippetUri)} a ext:PublishedSnippet;
               mu:uuid ${sparqlEscapeString(snippetUuid)};
               dct:title ${sparqlEscapeString(title.value)};

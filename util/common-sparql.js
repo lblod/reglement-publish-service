@@ -58,3 +58,23 @@ export const getEditorDocument = async (documentContainerUuid) => {
   const result = await query(documentContainerQuery);
   return result.results.bindings[0];
 };
+
+
+/**
+ * @param {string} snippetListUuid
+ */
+export const getSnippetList = async (snippetListUuid) => {
+  const snippetListQuery = `
+      PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+      PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+
+      SELECT ?snippetList
+      WHERE {
+          ?snippetList a ext:SnippetList.
+		  ?snippetList mu:uuid ${sparqlEscapeString(snippetListUuid)}.
+      }
+    `;
+
+  const result = await query(snippetListQuery);
+  return result.results.bindings[0];
+};

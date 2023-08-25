@@ -13,6 +13,7 @@ import {
   deletePublishedVersion,
   getEditorDocument,
   getPublishedVersion,
+  getSnippetList,
   hasPublishedVersion
 } from "./util/common-sparql";
 import {insertPublishedSnippetContainer, updatePublishedSnippetContainer} from "./util/snippet-sparql";
@@ -201,6 +202,7 @@ app.get('/regulatory-attachment-publication-tasks/:id', async function (req, res
 
 app.post('/snippet-list-publication-tasks', async (req, res, next) => {
   const documentContainerUuid = req.body.data.relationships['document-container'].data.id;
+  const snippetListUuid = req.body.data.relationships['snippet-list'].data.id;
 
   let publishingTask;
 
@@ -212,15 +214,21 @@ app.post('/snippet-list-publication-tasks', async (req, res, next) => {
 
     await publishingTask.updateStatus(TASK_STATUS_RUNNING);
     const publishedVersionResults = await getPublishedVersion(documentContainerUri);
+    const snippetList = await getSnippetList(snippetListUuid);
 
     if (hasPublishedVersion(publishedVersionResults)) {
       await updatePublishedSnippetContainer({
+        ...snippetList,
         ...editorDocument,
         publishedVersionResults,
         publishingTaskUri: publishingTask.uri
       });
     } else {
-      await insertPublishedSnippetContainer({...editorDocument, publishingTaskUri: publishingTask.uri});
+      await insertPublishedSnippetContainer({
+        ...snippetList,
+        ...editorDocument,
+        publishingTaskUri: publishingTask.uri
+      });
     }
 
     await publishingTask.updateStatus(TASK_STATUS_SUCCESS);
