@@ -5,6 +5,16 @@
 
 
 
+
+## 4.0.0 (2023-08-28)
+
+#### :rocket: Enhancement
+* [#11](https://github.com/lblod/reglement-publish-service/pull/11) GN-4322: Connect Snippet List with Template ([@dkozickis](https://github.com/dkozickis))
+
+#### Committers: 1
+- Deniss Kozickis ([@dkozickis](https://github.com/dkozickis))
+
+
 ## 3.1.0 (2023-07-24)
 
 #### :rocket: Enhancement
