@@ -21,21 +21,22 @@ export default class Task {
     const uri = `http://lblod.data.gift/tasks/${id}`;
     const created = Date.now();
     const queryString = `
-     PREFIX    mu: <http://mu.semte.ch/vocabularies/core/>
-     PREFIX    nuao: <http://www.semanticdesktop.org/ontologies/2010/01/25/nuao#>
-     PREFIX    task: <http://redpencil.data.gift/vocabularies/tasks/>
-     PREFIX    dct: <http://purl.org/dc/terms/>
-     PREFIX    adms: <http://www.w3.org/ns/adms#>
+     PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+     PREFIX nuao: <http://www.semanticdesktop.org/ontologies/2010/01/25/nuao#>
+     PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
+     PREFIX dct: <http://purl.org/dc/terms/>
+     PREFIX adms: <http://www.w3.org/ns/adms#>
+
      INSERT DATA {
         ${sparqlEscapeUri(uri)} a task:Task;
-                                                mu:uuid ${sparqlEscapeString(id)};
-                                                adms:status ${sparqlEscapeUri(TASK_STATUS_CREATED)};
-                                                task:numberOfRetries ${sparqlEscapeInt(0)};
-                                                dct:created ${sparqlEscapeDateTime(created)};
-                                                dct:modified ${sparqlEscapeDateTime(created)};
-                                                dct:creator <http://lblod.data.gift/services/reglement-publish-service>;
-                                                dct:type ${sparqlEscapeString(taskType)};
-                                                nuao:involves ${sparqlEscapeUri(involves)}.
+                                mu:uuid ${sparqlEscapeString(id)};
+                                adms:status ${sparqlEscapeUri(TASK_STATUS_CREATED)};
+                                task:numberOfRetries ${sparqlEscapeInt(0)};
+                                dct:created ${sparqlEscapeDateTime(created)};
+                                dct:modified ${sparqlEscapeDateTime(created)};
+                                dct:creator <http://lblod.data.gift/services/reglement-publish-service>;
+                                dct:type ${sparqlEscapeString(taskType)};
+                                nuao:involves ${sparqlEscapeUri(involves)}.
     }
   `;
     await update(queryString);
@@ -45,13 +46,14 @@ export default class Task {
 
   static async find(uuid) {
     const result = await query(`
-     PREFIX    mu: <http://mu.semte.ch/vocabularies/core/>
-     PREFIX    nuao: <http://www.semanticdesktop.org/ontologies/2010/01/25/nuao#>
-     PREFIX    task: <http://redpencil.data.gift/vocabularies/tasks/>
-     PREFIX    dct: <http://purl.org/dc/terms/>
-     PREFIX    adms: <http://www.w3.org/ns/adms#>
-     PREFIX    ext: <http://mu.semte.ch/vocabularies/ext/>
-     SELECT ?uri ?uuid ?type ?involves ?status ?modified ?created  WHERE {
+     PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+     PREFIX nuao: <http://www.semanticdesktop.org/ontologies/2010/01/25/nuao#>
+     PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
+     PREFIX dct: <http://purl.org/dc/terms/>
+     PREFIX adms: <http://www.w3.org/ns/adms#>
+     PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+
+     SELECT ?uri ?uuid ?type ?involves ?status ?modified ?created WHERE {
        BIND(${sparqlEscapeString(uuid)} AS ?uuid)
        ?uri a task:Task;
             mu:uuid ?uuid;
@@ -72,12 +74,13 @@ export default class Task {
 
   static async query({involves, taskType = TASK_TYPE_REGLEMENT_PUBLISH}) {
     const result = await query(`
-     PREFIX    mu: <http://mu.semte.ch/vocabularies/core/>
-     PREFIX    nuao: <http://www.semanticdesktop.org/ontologies/2010/01/25/nuao#>
-     PREFIX    task: <http://redpencil.data.gift/vocabularies/tasks/>
-     PREFIX    dct: <http://purl.org/dc/terms/>
-     PREFIX    adms: <http://www.w3.org/ns/adms#>
-     PREFIX    ext: <http://mu.semte.ch/vocabularies/ext/>
+     PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+     PREFIX nuao: <http://www.semanticdesktop.org/ontologies/2010/01/25/nuao#>
+     PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
+     PREFIX dct: <http://purl.org/dc/terms/>
+     PREFIX adms: <http://www.w3.org/ns/adms#>
+     PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+
      SELECT ?uri ?uuid ?involves ?status ?modified ?created ?regulatoryAttachmentPublication WHERE {
        ?uri a task:Task;
             mu:uuid ?uuid;
@@ -123,25 +126,25 @@ export default class Task {
 
   async updateStatus(status, reason) {
     const queryString = `
-     PREFIX    mu: <http://mu.semte.ch/vocabularies/core/>
-     PREFIX    nuao: <http://www.semanticdesktop.org/ontologies/2010/01/25/nuao#>
-     PREFIX    task: <http://redpencil.data.gift/vocabularies/tasks/>
-     PREFIX    dct: <http://purl.org/dc/terms/>
-     PREFIX adms: <http://www.w3.org/ns/adms#>
-     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+      PREFIX nuao: <http://www.semanticdesktop.org/ontologies/2010/01/25/nuao#>
+      PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
+      PREFIX dct: <http://purl.org/dc/terms/>
+      PREFIX adms: <http://www.w3.org/ns/adms#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-     DELETE {
-       ?uri adms:status ?status.
-     }
-     INSERT {
-       ?uri adms:status ${sparqlEscapeUri(status)}.
-       ${reason ? `?uri rdfs:comment ${sparqlEscapeString(reason)}.` : ''}
-     }
-     WHERE {
-         ?uri a task:Task;
-              mu:uuid ${sparqlEscapeString(this.id)};
-              adms:status ?status.
-    }`;
+      DELETE {
+        ?uri adms:status ?status.
+      }
+      INSERT {
+        ?uri adms:status ${sparqlEscapeUri(status)}.
+        ${reason ? `?uri rdfs:comment ${sparqlEscapeString(reason)}.` : ''}
+      }
+      WHERE {
+        ?uri a task:Task;
+            mu:uuid ${sparqlEscapeString(this.id)};
+            adms:status ?status.
+      }`;
     await update(queryString);
   }
 }

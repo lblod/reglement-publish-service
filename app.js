@@ -31,13 +31,14 @@ app.post('/regulatory-attachment-publication-tasks', async (req, res, next) => {
       PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
       PREFIX pav: <http://purl.org/pav/>
       PREFIX dct: <http://purl.org/dc/terms/>
+
       SELECT ?content ?documentContainer ?editorDocument ?graph ?title
       WHERE {
         GRAPH ?graph {
           ?documentContainer mu:uuid ${sparqlEscapeString(reglementUuid)};
-            pav:hasCurrentVersion ?editorDocument.
-          ?editorDocument ext:editorDocumentTemplateVersion ?content.
-          ?editorDocument dct:title ?title.
+                             pav:hasCurrentVersion ?editorDocument.
+          ?editorDocument ext:editorDocumentTemplateVersion ?content;
+                          dct:title ?title.
         }
       }
     `;
@@ -96,14 +97,19 @@ app.post('/regulatory-attachment-publication-tasks', async (req, res, next) => {
         PREFIX prov: <http://www.w3.org/ns/prov#>
         PREFIX gn: <http://data.lblod.info/vocabularies/gelinktnotuleren/>
         PREFIX schema: <http://schema.org/>
+
         INSERT DATA {
           GRAPH <http://mu.semte.ch/graphs/public> {
             ${sparqlEscapeUri(publishingTask.uri)} ext:publishedVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
-            ${sparqlEscapeUri(publishedContainerUri)} pav:hasCurrentVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
-            ${sparqlEscapeUri(publishedContainerUri)} pav:hasVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
+
+            ${sparqlEscapeUri(publishedContainerUri)} pav:hasCurrentVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)};
+                                                      pav:hasVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
+
             ${sparqlEscapeUri(currentVersionUri)} schema:validThrough ${sparqlEscapeDateTime(now)}.
-            ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} a gn:ReglementaireBijlageTemplateVersie.
-            ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} a nfo:FileDataObject;
+
+            ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} 
+              a gn:ReglementaireBijlageTemplateVersie;
+              a nfo:FileDataObject;
               mu:uuid ${sparqlEscapeString(publishedRegulatoryAttachmentUuid)};
               dct:title ${sparqlEscapeString(title)};
               pav:previousVersion ${sparqlEscapeUri(currentVersionUri)};
@@ -113,7 +119,9 @@ app.post('/regulatory-attachment-publication-tasks', async (req, res, next) => {
               dbpedia:extension ${sparqlEscapeString('html')};
               nfo:fileCreated ${sparqlEscapeDateTime(now)};
               prov:derivedFrom ${sparqlEscapeUri(editorDocumentUri)}.
-            ${sparqlEscapeUri(physicalFileUri)} a nfo:FileDataObject;
+
+            ${sparqlEscapeUri(physicalFileUri)} 
+             a nfo:FileDataObject;
               mu:uuid ${sparqlEscapeString(physicalFileUuid)};
               nfo:fileName ${sparqlEscapeString(fileName)};
               dct:format ${sparqlEscapeString('application/html')};
@@ -141,16 +149,21 @@ app.post('/regulatory-attachment-publication-tasks', async (req, res, next) => {
         PREFIX dbpedia: <http://dbpedia.org/ontology/>
         PREFIX prov: <http://www.w3.org/ns/prov#>
         PREFIX gn: <http://data.lblod.info/vocabularies/gelinktnotuleren/>
+
         INSERT DATA {
           GRAPH <http://mu.semte.ch/graphs/public> {
             ${sparqlEscapeUri(publishingTask.uri)} ext:publishedVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
-            ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)} a gn:ReglementaireBijlageTemplate;
+
+            ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)} 
+              a gn:ReglementaireBijlageTemplate;
               mu:uuid ${sparqlEscapeString(publishedRegulatoryAttachmentContainerUuid)};
               pav:hasCurrentVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)};
               pav:hasVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)};
               prov:derivedFrom ${sparqlEscapeUri(documentContainerUri)}.
-            ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} a gn:ReglementaireBijlageTemplateVersie.
-            ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} a nfo:FileDataObject;
+
+            ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} 
+              a gn:ReglementaireBijlageTemplateVersie;
+              a nfo:FileDataObject;
               mu:uuid ${sparqlEscapeString(publishedRegulatoryAttachmentUuid)};
               dct:title ${sparqlEscapeString(title)};
               nfo:fileName ${sparqlEscapeString(fileName)};
@@ -159,7 +172,9 @@ app.post('/regulatory-attachment-publication-tasks', async (req, res, next) => {
               dbpedia:fileExtension ${sparqlEscapeString('html')};
               nfo:fileCreated ${sparqlEscapeDateTime(now)};
               prov:derivedFrom ${sparqlEscapeUri(editorDocumentUri)}.
-            ${sparqlEscapeUri(physicalFileUri)} a nfo:FileDataObject;
+
+            ${sparqlEscapeUri(physicalFileUri)} 
+              a nfo:FileDataObject;
               mu:uuid ${sparqlEscapeString(physicalFileUuid)};
               nfo:fileName ${sparqlEscapeString(fileName)};
               dct:format ${sparqlEscapeString('application/html')};
