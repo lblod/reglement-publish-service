@@ -233,11 +233,11 @@ app.get('/tasks/:id', async function (req, res) {
         status: task.status,
         type: task.type,
       }
-    })
+    });
   } else {
     res.status(404).send(`task with id ${taskId} was not found`);
   }
-})
+});
 
 
 app.use(errorHandler);
