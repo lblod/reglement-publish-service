@@ -16,7 +16,7 @@ export const TASK_TYPE_REGLEMENT_PUBLISH = "regulatory-attachment-publication-ta
 export const TASK_TYPE_SNIPPET_PUBLISH = "snippet-list-publication-tasks";
 
 export default class Task {
-  static async create(reglementUri, taskType = TASK_TYPE_REGLEMENT_PUBLISH) {
+  static async create(involves, taskType = TASK_TYPE_REGLEMENT_PUBLISH) {
     const id = uuid();
     const uri = `http://lblod.data.gift/tasks/${id}`;
     const created = Date.now();
@@ -35,12 +35,12 @@ export default class Task {
                                                 dct:modified ${sparqlEscapeDateTime(created)};
                                                 dct:creator <http://lblod.data.gift/services/reglement-publish-service>;
                                                 dct:type ${sparqlEscapeString(taskType)};
-                                                nuao:involves ${sparqlEscapeUri(reglementUri)}.
+                                                nuao:involves ${sparqlEscapeUri(involves)}.
     }
   `;
     await update(queryString);
 
-    return new Task({id, type: taskType, involves: reglementUri, created, modified: created, status: TASK_STATUS_CREATED, uri});
+    return new Task({id, type: taskType, involves, created, modified: created, status: TASK_STATUS_CREATED, uri});
   }
 
   static async find(uuid) {
@@ -51,7 +51,7 @@ export default class Task {
      PREFIX    dct: <http://purl.org/dc/terms/>
      PREFIX    adms: <http://www.w3.org/ns/adms#>
      PREFIX    ext: <http://mu.semte.ch/vocabularies/ext/>
-     SELECT ?uri ?uuid ?type ?involves ?status ?modified ?created ?regulatoryAttachmentPublication WHERE {
+     SELECT ?uri ?uuid ?type ?involves ?status ?modified ?created  WHERE {
        BIND(${sparqlEscapeString(uuid)} AS ?uuid)
        ?uri a task:Task;
             mu:uuid ?uuid;
@@ -61,9 +61,6 @@ export default class Task {
             nuao:involves ?involves;
             dct:creator <http://lblod.data.gift/services/reglement-publish-service>;
             adms:status ?status.
-        OPTIONAL {
-          ?uri ext:publishedVersion ?regulatoryAttachmentPublication.
-        }
      }
    `);
     if (result.results.bindings.length) {
@@ -73,7 +70,7 @@ export default class Task {
       return null;
   }
 
-  static async query({reglementUri, userUri = null, taskType = TASK_TYPE_REGLEMENT_PUBLISH}) {
+  static async query({involves, taskType = TASK_TYPE_REGLEMENT_PUBLISH}) {
     const result = await query(`
      PREFIX    mu: <http://mu.semte.ch/vocabularies/core/>
      PREFIX    nuao: <http://www.semanticdesktop.org/ontologies/2010/01/25/nuao#>
@@ -87,19 +84,15 @@ export default class Task {
             dct:created ?created;
             dct:modified ?modified;
             dct:type ${sparqlEscapeString(taskType)};
-            nuao:involves ${sparqlEscapeUri(reglementUri)};
+            nuao:involves ${sparqlEscapeUri(involves)};
             dct:creator <http://lblod.data.gift/services/reglement-publish-service>;
             adms:status ?status.
-        OPTIONAL {
-          ?uri ext:publishedVersion ?regulatoryAttachmentPublication.
-        }
-       ${userUri ? `?uri nuao:involves ${sparqlEscapeUri(userUri)}.` : ''}
      }
    `);
     if (result.results.bindings.length) {
       return Task.fromBinding({...result.results.bindings[0],
         type: { value: taskType },
-        involves: { value: reglementUri }
+        involves: { value: involves }
       });
     }
     else
@@ -115,11 +108,10 @@ export default class Task {
       status: binding.status.value,
       involves: binding.involves.value,
       type: binding.type.value,
-      regulatoryAttachmentPublication: binding.regulatoryAttachmentPublication ? binding.regulatoryAttachmentPublication.value : undefined,
     });
   }
 
-  constructor({id, uri, created, status, modified, type, involves, regulatoryAttachmentPublication}) {
+  constructor({id, uri, created, status, modified, type, involves}) {
     this.id = id;
     this.type = type;
     this.involves = involves;
@@ -127,7 +119,6 @@ export default class Task {
     this.modified = modified;
     this.status = status;
     this.uri = uri;
-    this.regulatoryAttachmentPublication = regulatoryAttachmentPublication;
   }
 
   async updateStatus(status, reason) {

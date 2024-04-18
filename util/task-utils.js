@@ -1,14 +1,14 @@
 import Task from "../models/task";
 
 /**
- * @param {string} documentContainerUri
+ * @param {string} involves
  * @param {string} taskType
  * */
-export async function ensureTask(documentContainerUri, taskType) {
-  let task = await Task.query({reglementUri: documentContainerUri, taskType});
+export async function ensureTask(involves, taskType) {
+  let task = await Task.query({involves: involves, taskType});
 
   if (!task) {
-    task = await Task.create(documentContainerUri, taskType);
+    task = await Task.create(involves, taskType);
   }
 
   return task;
