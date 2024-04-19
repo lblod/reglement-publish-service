@@ -1,7 +1,12 @@
-import {sparqlEscapeDateTime, sparqlEscapeString, sparqlEscapeUri, uuid} from 'mu';
-import {updateSudo as update} from "@lblod/mu-auth-sudo";
+import {
+  sparqlEscapeDateTime,
+  sparqlEscapeString,
+  sparqlEscapeUri,
+  uuid,
+} from "mu";
+import { updateSudo as update } from "@lblod/mu-auth-sudo";
 
-import {deletePublishedVersion} from "./common-sparql";
+import { deletePublishedVersion } from "./common-sparql";
 
 export const insertPublishedSnippetContainer = async ({
   documentContainer,
@@ -9,7 +14,7 @@ export const insertPublishedSnippetContainer = async ({
   snippetList,
   title,
   content,
-  publishingTaskUri
+  publishingTaskUri,
 }) => {
   const snippetContainerUuid = uuid();
   const snippetContainerUri = `http://lblod.data.gift/published-snippet-containers/${snippetContainerUuid}`;
@@ -57,8 +62,10 @@ export const updatePublishedSnippetContainer = async ({
 }) => {
   await deletePublishedVersion(publishedVersionResults);
 
-  const publishedContainerUri = publishedVersionResults.results.bindings[0].publishedContainer.value;
-  const previousVersionUri = publishedVersionResults.results.bindings[0].currentVersion.value;
+  const publishedContainerUri =
+    publishedVersionResults.results.bindings[0].publishedContainer.value;
+  const previousVersionUri =
+    publishedVersionResults.results.bindings[0].currentVersion.value;
 
   const snippetUuid = uuid();
   const publishedSnippetUri = `http://lblod.data.gift/published-snippets/${snippetUuid}`;

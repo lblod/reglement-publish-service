@@ -1,203 +1,89 @@
-import {app, errorHandler, sparqlEscapeDateTime, sparqlEscapeString, sparqlEscapeUri, uuid} from 'mu';
-import {querySudo as query} from '@lblod/mu-auth-sudo';
-import fs from 'fs';
+import { app, errorHandler } from "mu";
 import Task, {
   TASK_STATUS_FAILURE,
   TASK_STATUS_RUNNING,
   TASK_STATUS_SUCCESS,
   TASK_TYPE_REGLEMENT_PUBLISH,
-  TASK_TYPE_SNIPPET_PUBLISH
-} from './models/task';
-import {ensureTask} from './util/task-utils';
+  TASK_TYPE_SNIPPET_PUBLISH,
+} from "./models/task";
 import {
-  deletePublishedVersion,
   getEditorDocument,
   getPublishedVersion,
   getSnippetList,
-  hasPublishedVersion
+  hasPublishedVersion,
 } from "./util/common-sparql";
-import {insertPublishedSnippetContainer, updatePublishedSnippetContainer} from "./util/snippet-sparql";
+import {
+  insertPublishedSnippetContainer,
+  updatePublishedSnippetContainer,
+} from "./util/snippet-sparql";
+import { DECISION_FOLDER, RS_FOLDER } from "./constants";
+import Template from "./models/template";
+import TemplateVersion from "./models/template-version";
+import DocumentContainer from "./models/document-container";
 
-app.post('/regulatory-attachment-publication-tasks', async (req, res, next) => {
-  let documentContainerUri;
-  let editorDocumentUri;
-  let template;
+app.post("/publish-template/:documentContainerId", async (req, res, next) => {
+  const documentContainerId = req.params.documentContainerId;
   let publishingTask;
-  let title;
   try {
-    const reglementUuid = req.body.data.relationships['document-container'].data.id;
-    var myQuery = `
-      PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-      PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-      PREFIX pav: <http://purl.org/pav/>
-      PREFIX dct: <http://purl.org/dc/terms/>
+    const documentContainer = await DocumentContainer.query({
+      id: documentContainerId,
+    });
+    const templateType =
+      documentContainer.folder === DECISION_FOLDER
+        ? "decision"
+        : documentContainer.folder === RS_FOLDER
+          ? "regulatory-statement"
+          : null;
 
-      SELECT ?content ?documentContainer ?editorDocument ?graph ?title
-      WHERE {
-        GRAPH ?graph {
-          ?documentContainer mu:uuid ${sparqlEscapeString(reglementUuid)};
-                             pav:hasCurrentVersion ?editorDocument.
-          ?editorDocument ext:editorDocumentTemplateVersion ?content;
-                          dct:title ?title.
-        }
-      }
-    `;
-    const result = await query(myQuery);
-    const bindings = result.results.bindings[0];
-    template = bindings.content.value;
-    documentContainerUri = bindings.documentContainer.value;
-    editorDocumentUri = bindings.editorDocument.value;
-    title = bindings.title.value;
+    if (!templateType) {
+      throw new Error(
+        `Provided document container does not belong to a decision or regulatory statement template`,
+      );
+    }
+    publishingTask = await Task.ensure({
+      involves: documentContainer.uri,
+      taskType: TASK_TYPE_REGLEMENT_PUBLISH,
+    });
 
-    publishingTask = await ensureTask(documentContainerUri, TASK_TYPE_REGLEMENT_PUBLISH);
+    await publishingTask.updateStatus(TASK_STATUS_RUNNING);
 
-    res.json({data: {id: publishingTask.id, status: "accepted", type: publishingTask.type}});
+    const templateVersion = await TemplateVersion.create({
+      derivedFrom: documentContainer.currentVersion.uri,
+      content: documentContainer.currentVersion.content,
+    });
+    const template = await Template.ensure({
+      documentContainerUri: documentContainer.uri,
+      templateType,
+    });
+    if (template.currentVersion) {
+      await template.currentVersion.markAsExpired();
+    }
+    await template.setCurrentVersion(templateVersion);
+    await publishingTask.updateStatus(TASK_STATUS_SUCCESS);
+
+    res.json({
+      data: {
+        id: publishingTask.id,
+        status: "accepted",
+        type: publishingTask.type,
+      },
+    });
   } catch (err) {
     console.log(err);
+    if (publishingTask) {
+      publishingTask.updateStatus(TASK_STATUS_FAILURE, err.message);
+    }
     const error = new Error(
-      `An error occurred while publishing the reglement ${
-        req.params.uuid
-      }: ${err}`
+      `An error occurred while publishing the template ${documentContainerId}: ${err}`,
     );
     return next(error);
   }
-  try {
-    await publishingTask.updateStatus(TASK_STATUS_RUNNING);
-
-    // Create a new file in the share folder with the template
-    const fileUuid = uuid();
-    const fileName = `${fileUuid}.html`;
-    const filePath = `/share/${fileName}`;
-    fs.writeFileSync(filePath, template);
-    const fileSize = fs.statSync(filePath).size;
-    const physicalFileUuid = uuid();
-    const physicalFileUri = `share://${fileName}`;
-
-    const publishedVersionResults = await getPublishedVersion(documentContainerUri);
-
-    let insertPublishedVersionQuery;
-
-    if (hasPublishedVersion(publishedVersionResults)) {
-      const publishedContainerUri = publishedVersionResults.results.bindings[0].publishedContainer.value;
-      const currentVersionUri = publishedVersionResults.results.bindings[0].currentVersion.value;
-      const publishedRegulatoryAttachmentUuid = uuid();
-      const publishedRegulatoryAttachmentUri = `http://data.lblod.info/published-regulatory-attachment/${publishedRegulatoryAttachmentUuid}`;
-      const now = new Date();
-
-      await deletePublishedVersion(publishedVersionResults);
-
-      insertPublishedVersionQuery = `
-        PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-        PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-        PREFIX pav: <http://purl.org/pav/>
-        PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
-        PREFIX nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>
-        PREFIX dct: <http://purl.org/dc/terms/>
-        PREFIX dbpedia: <http://dbpedia.org/ontology/>
-        PREFIX prov: <http://www.w3.org/ns/prov#>
-        PREFIX gn: <http://data.lblod.info/vocabularies/gelinktnotuleren/>
-        PREFIX schema: <http://schema.org/>
-
-        INSERT DATA {
-          GRAPH <http://mu.semte.ch/graphs/public> {
-            ${sparqlEscapeUri(publishingTask.uri)} ext:publishedVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
-
-            ${sparqlEscapeUri(publishedContainerUri)} pav:hasCurrentVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)};
-                                                      pav:hasVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
-
-            ${sparqlEscapeUri(currentVersionUri)} schema:validThrough ${sparqlEscapeDateTime(now)}.
-
-            ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} 
-              a gn:ReglementaireBijlageTemplateVersie;
-              a nfo:FileDataObject;
-              mu:uuid ${sparqlEscapeString(publishedRegulatoryAttachmentUuid)};
-              dct:title ${sparqlEscapeString(title)};
-              pav:previousVersion ${sparqlEscapeUri(currentVersionUri)};
-              nfo:fileName ${sparqlEscapeString(fileName)};
-              dct:format ${sparqlEscapeString('application/html')};
-              nfo:fileSize ${fileSize};
-              dbpedia:extension ${sparqlEscapeString('html')};
-              nfo:fileCreated ${sparqlEscapeDateTime(now)};
-              prov:derivedFrom ${sparqlEscapeUri(editorDocumentUri)}.
-
-            ${sparqlEscapeUri(physicalFileUri)} 
-             a nfo:FileDataObject;
-              mu:uuid ${sparqlEscapeString(physicalFileUuid)};
-              nfo:fileName ${sparqlEscapeString(fileName)};
-              dct:format ${sparqlEscapeString('application/html')};
-              nfo:fileSize ${fileSize};
-              dbpedia:extension ${sparqlEscapeString('html')};
-              nfo:fileCreated ${sparqlEscapeDateTime(now)};
-              nie:dataSource ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
-          }
-        }
-      `;
-    } else {
-      const publishedRegulatoryAttachmentContainerUuid = uuid();
-      const publishedRegulatoryAttachmentContainerUri = `http://data.lblod.info/published-regulatory-attachment-container/${publishedRegulatoryAttachmentContainerUuid}`;
-      const publishedRegulatoryAttachmentUuid = uuid();
-      const publishedRegulatoryAttachmentUri = `http://data.lblod.info/published-regulatory-attachment/${publishedRegulatoryAttachmentUuid}`;
-      const now = new Date();
-      //Little hack we insert the publishedVersion uri in both graphs to use it in the frontend with the organization graph and in the publisher with the public graph
-      insertPublishedVersionQuery = `
-        PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-        PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-        PREFIX pav: <http://purl.org/pav/>
-        PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
-        PREFIX nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>
-        PREFIX dct: <http://purl.org/dc/terms/>
-        PREFIX dbpedia: <http://dbpedia.org/ontology/>
-        PREFIX prov: <http://www.w3.org/ns/prov#>
-        PREFIX gn: <http://data.lblod.info/vocabularies/gelinktnotuleren/>
-
-        INSERT DATA {
-          GRAPH <http://mu.semte.ch/graphs/public> {
-            ${sparqlEscapeUri(publishingTask.uri)} ext:publishedVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
-
-            ${sparqlEscapeUri(publishedRegulatoryAttachmentContainerUri)} 
-              a gn:ReglementaireBijlageTemplate;
-              mu:uuid ${sparqlEscapeString(publishedRegulatoryAttachmentContainerUuid)};
-              pav:hasCurrentVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)};
-              pav:hasVersion ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)};
-              prov:derivedFrom ${sparqlEscapeUri(documentContainerUri)}.
-
-            ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)} 
-              a gn:ReglementaireBijlageTemplateVersie;
-              a nfo:FileDataObject;
-              mu:uuid ${sparqlEscapeString(publishedRegulatoryAttachmentUuid)};
-              dct:title ${sparqlEscapeString(title)};
-              nfo:fileName ${sparqlEscapeString(fileName)};
-              dct:format ${sparqlEscapeString('application/html')};
-              nfo:fileSize ${fileSize};
-              dbpedia:fileExtension ${sparqlEscapeString('html')};
-              nfo:fileCreated ${sparqlEscapeDateTime(now)};
-              prov:derivedFrom ${sparqlEscapeUri(editorDocumentUri)}.
-
-            ${sparqlEscapeUri(physicalFileUri)} 
-              a nfo:FileDataObject;
-              mu:uuid ${sparqlEscapeString(physicalFileUuid)};
-              nfo:fileName ${sparqlEscapeString(fileName)};
-              dct:format ${sparqlEscapeString('application/html')};
-              nfo:fileSize ${fileSize};
-              dbpedia:fileExtension ${sparqlEscapeString('html')};
-              nfo:fileCreated ${sparqlEscapeDateTime(now)};
-              nie:dataSource ${sparqlEscapeUri(publishedRegulatoryAttachmentUri)}.
-          }
-        }
-      `;
-    }
-
-    await query(insertPublishedVersionQuery);
-    await publishingTask.updateStatus(TASK_STATUS_SUCCESS);
-  } catch (err) {
-    console.log(err);
-    publishingTask.updateStatus(TASK_STATUS_FAILURE, err.message);
-  }
 });
 
-app.post('/snippet-list-publication-tasks', async (req, res, next) => {
-  const documentContainerUuid = req.body.data.relationships['document-container'].data.id;
-  const snippetListUuid = req.body.data.relationships['snippet-list'].data.id;
+app.post("/snippet-list-publication-tasks", async (req, res, next) => {
+  const documentContainerUuid =
+    req.body.data.relationships["document-container"].data.id;
+  const snippetListUuid = req.body.data.relationships["snippet-list"].data.id;
 
   let publishingTask;
 
@@ -205,10 +91,14 @@ app.post('/snippet-list-publication-tasks', async (req, res, next) => {
     const editorDocument = await getEditorDocument(documentContainerUuid);
     const documentContainerUri = editorDocument.documentContainer.value;
 
-    const publishingTask = await ensureTask(documentContainerUri, TASK_TYPE_SNIPPET_PUBLISH);
+    publishingTask = await Task.ensure({
+      involves: documentContainerUri,
+      taskType: TASK_TYPE_SNIPPET_PUBLISH,
+    });
 
     await publishingTask.updateStatus(TASK_STATUS_RUNNING);
-    const publishedVersionResults = await getPublishedVersion(documentContainerUri);
+    const publishedVersionResults =
+      await getPublishedVersion(documentContainerUri);
     const snippetList = await getSnippetList(snippetListUuid);
 
     if (hasPublishedVersion(publishedVersionResults)) {
@@ -216,19 +106,25 @@ app.post('/snippet-list-publication-tasks', async (req, res, next) => {
         ...snippetList,
         ...editorDocument,
         publishedVersionResults,
-        publishingTaskUri: publishingTask.uri
+        publishingTaskUri: publishingTask.uri,
       });
     } else {
       await insertPublishedSnippetContainer({
         ...snippetList,
         ...editorDocument,
-        publishingTaskUri: publishingTask.uri
+        publishingTaskUri: publishingTask.uri,
       });
     }
 
     await publishingTask.updateStatus(TASK_STATUS_SUCCESS);
 
-    res.json({data: {id: publishingTask.id, status: "accepted", type: publishingTask.type}});
+    res.json({
+      data: {
+        id: publishingTask.id,
+        status: "accepted",
+        type: publishingTask.type,
+      },
+    });
   } catch (error) {
     console.log(error);
     if (publishingTask) {
@@ -238,21 +134,20 @@ app.post('/snippet-list-publication-tasks', async (req, res, next) => {
   }
 });
 
-app.get('/tasks/:id', async function (req, res) {
+app.get("/tasks/:id", async function (req, res) {
   const taskId = req.params.id;
   const task = await Task.find(taskId);
-  if(task){
+  if (task) {
     res.status(200).send({
       data: {
         id: task.id,
         status: task.status,
         type: task.type,
-      }
+      },
     });
   } else {
     res.status(404).send(`task with id ${taskId} was not found`);
   }
 });
-
 
 app.use(errorHandler);
