@@ -23,29 +23,43 @@ import DocumentContainer from "./models/document-container";
 
 app.post("/publish-template/:documentContainerId", async (req, res, next) => {
   const documentContainerId = req.params.documentContainerId;
-  let publishingTask;
+  let publishingTask, documentContainer;
   try {
-    const documentContainer = await DocumentContainer.query({
+    documentContainer = await DocumentContainer.query({
       id: documentContainerId,
     });
+    publishingTask = await Task.ensure({
+      involves: documentContainer.uri,
+      taskType: TASK_TYPE_REGLEMENT_PUBLISH,
+    });
+    res.json({
+      data: {
+        id: publishingTask.id,
+        status: publishingTask.status,
+        type: publishingTask.type,
+      },
+    });
+  } catch (err) {
+    console.log(err);
+    const error = new Error(
+      `An error occurred while publishing the template for ${documentContainerId}: ${err}`
+    );
+    return next(error);
+  }
+  try {
+    await publishingTask.updateStatus(TASK_STATUS_RUNNING);
+
     const templateType =
       documentContainer.folder === DECISION_FOLDER
         ? "decision"
         : documentContainer.folder === RS_FOLDER
           ? "regulatory-statement"
           : null;
-
     if (!templateType) {
       throw new Error(
-        `Provided document container does not belong to a decision or regulatory statement template`,
+        `Provided document container does not belong to a decision or regulatory statement template`
       );
     }
-    publishingTask = await Task.ensure({
-      involves: documentContainer.uri,
-      taskType: TASK_TYPE_REGLEMENT_PUBLISH,
-    });
-
-    await publishingTask.updateStatus(TASK_STATUS_RUNNING);
 
     const templateVersion = await TemplateVersion.create({
       derivedFrom: documentContainer.currentVersion.uri,
@@ -60,23 +74,9 @@ app.post("/publish-template/:documentContainerId", async (req, res, next) => {
     }
     await template.setCurrentVersion(templateVersion);
     await publishingTask.updateStatus(TASK_STATUS_SUCCESS);
-
-    res.json({
-      data: {
-        id: publishingTask.id,
-        status: "accepted",
-        type: publishingTask.type,
-      },
-    });
   } catch (err) {
     console.log(err);
-    if (publishingTask) {
-      publishingTask.updateStatus(TASK_STATUS_FAILURE, err.message);
-    }
-    const error = new Error(
-      `An error occurred while publishing the template ${documentContainerId}: ${err}`,
-    );
-    return next(error);
+    publishingTask.updateStatus(TASK_STATUS_FAILURE, err.message);
   }
 });
 
