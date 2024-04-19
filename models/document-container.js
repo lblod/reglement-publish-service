@@ -24,10 +24,10 @@ export default class DocumentContainer {
   }
 
   static fromBinding(binding) {
-    const currentVersion = EditorDocument.create({
-      uri: binding.currentVersion_uri,
-      id: binding.currentVersion_id,
-      content: binding.currentVersion_content,
+    const currentVersion = new EditorDocument({
+      uri: binding.currentVersion_uri.value,
+      id: binding.currentVersion_id.value,
+      content: binding.currentVersion_content.value,
     });
     return new DocumentContainer({
       uri: binding.uri.value,
@@ -53,13 +53,14 @@ export default class DocumentContainer {
       PREFIX pav: <http://purl.org/pav/>
       PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
       
-      SELECT ?id ?uri ?derivedFrom WHERE {
+      SELECT ?id ?uri ?folder ?currentVersion_uri ?currentVersion_id ?currentVersion_content WHERE {
         ${bindStatement}
         ?uri a ext:DocumentContainer;
              mu:uuid ?id;
+             ext:editorDocumentFolder ?folder;
              pav:hasCurrentVersion ?currentVersion_uri.
         ?currentVersion_uri mu:uuid ?currentVersion_id;
-                            ext:content ?currentVersion_content.
+                            ext:editorDocumentTemplateVersion ?currentVersion_content.
       }
     `;
     const result = await query(myQuery);
