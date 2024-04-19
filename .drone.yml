@@ -4,11 +4,11 @@ type: docker
 name: verify
 steps:
 - name: install
-  image: node:14
+  image: node:20
   commands:
     - npm install
 - name: lint
-  image: node:14
+  image: node:20
   commands:
     - npm run lint
 - name: build-dry-run
