@@ -1,4 +1,4 @@
-import { sparqlEscapeUri, uuid as uuidv4 } from "mu";
+import { sparqlEscapeUri, uuid as uuidv4, sparqlEscapeString } from "mu";
 import { querySudo as query, updateSudo as update } from "@lblod/mu-auth-sudo";
 import TemplateVersion from "./template-version";
 
@@ -48,7 +48,7 @@ export default class Template {
           ${sparqlEscapeUri(templateUri)} a gn:Template;
                                           a ${sparqlEscapeUri(typeUri)};
                                           prov:derivedFrom ${sparqlEscapeUri(derivedFrom)};
-                                          mu:uuid ${templateId}.
+                                          mu:uuid ${sparqlEscapeString(templateId)}.
         }
       }
     `;
@@ -63,10 +63,10 @@ export default class Template {
   static fromBinding(binding) {
     let currentVersion;
     if (binding.currentVersion_uri) {
-      currentVersion = TemplateVersion.create({
-        uri: binding.currentVersion_uri,
-        id: binding.currentVersion_id,
-        derivedFrom: binding.currentVersion_derivedFrom,
+      currentVersion = new TemplateVersion({
+        uri: binding.currentVersion_uri.value,
+        id: binding.currentVersion_id.value,
+        derivedFrom: binding.currentVersion_derivedFrom.value,
       });
     }
     return new Template({
@@ -95,7 +95,7 @@ export default class Template {
       PREFIX prov: <http://www.w3.org/ns/prov#>
       PREFIX pav: <http://purl.org/pav/>
 
-      SELECT ?id ?uri ?derivedFrom WHERE {
+      SELECT ?id ?uri ?derivedFrom ?currentVersion_uri ?currentVersion_id ?currentVersion_derivedFrom WHERE {
         ${bindStatement}
         ?uri a gn:Template;
              mu:uuid ?id;
@@ -132,25 +132,21 @@ export default class Template {
    * @param {TemplateVersion} templateVersion
    */
   async setCurrentVersion(templateVersion) {
-    const deleteQuery = this.currentVersion
-      ? `DELETE DATA {
-        GRAPH <http://mu.semte.ch/graphs/public> {
-          ${this.uri} pav:currentVersion ${this.currentVersion.uri}.
-        }
-      }
-    `
-      : "";
-    const insertQuery = `INSERT DATA {
-      GRAPH <http://mu.semte.ch/graphs/public> {
-        ${this.uri} pav:currentVersion ${templateVersion.uri};
-                    pav:hasVersion ${templateVersion.uri}.
-    }
-    }`;
     const myQuery = `
       PREFIX pav: <http://purl.org/pav/>
 
-      ${deleteQuery}
-      ${insertQuery}
+      DELETE WHERE {
+        GRAPH <http://mu.semte.ch/graphs/public> {
+          ${sparqlEscapeUri(this.uri)} pav:hasCurrentVersion ?v.
+        }
+      };
+
+      INSERT DATA {
+        GRAPH <http://mu.semte.ch/graphs/public> {
+          ${sparqlEscapeUri(this.uri)} pav:hasCurrentVersion ${sparqlEscapeUri(templateVersion.uri)};
+                      pav:hasVersion ${sparqlEscapeUri(templateVersion.uri)}.
+        }
+      }
     `;
     await update(myQuery);
     this.currentVersion = templateVersion;
