@@ -112,7 +112,7 @@ export default class TemplateVersion {
         ${bindStatement}
         ?uri a gn:TemplateVersie;
              mu:uuid ?id;
-             prov:derivedFrom ?derivedFrom
+             prov:derivedFrom ?derivedFrom.
       }
     `;
     const result = await query(myQuery);
