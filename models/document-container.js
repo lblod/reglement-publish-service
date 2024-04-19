@@ -1,5 +1,5 @@
 import EditorDocument from "./editor-document";
-import { sparqlEscapeUri } from "mu";
+import { sparqlEscapeUri, sparqlEscapeString } from "mu";
 import { querySudo as query } from "@lblod/mu-auth-sudo";
 
 export default class DocumentContainer {
@@ -45,7 +45,7 @@ export default class DocumentContainer {
     let bindStatement = uri
       ? `BIND(${sparqlEscapeUri(uri)} AS ?uri)`
       : id
-        ? `BIND(${sparqlEscapeUri(id)} AS ?id)`
+        ? `BIND(${sparqlEscapeString(id)} AS ?id)`
         : "";
 
     const myQuery = `
@@ -56,11 +56,10 @@ export default class DocumentContainer {
       SELECT ?id ?uri ?derivedFrom WHERE {
         ${bindStatement}
         ?uri a ext:DocumentContainer;
-             mu:uuid ?id.
+             mu:uuid ?id;
              pav:hasCurrentVersion ?currentVersion_uri.
         ?currentVersion_uri mu:uuid ?currentVersion_id;
                             ext:content ?currentVersion_content.
-        }
       }
     `;
     const result = await query(myQuery);
