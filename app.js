@@ -28,6 +28,11 @@ app.post("/publish-template/:documentContainerId", async (req, res, next) => {
     documentContainer = await DocumentContainer.query({
       id: documentContainerId,
     });
+    if(!documentContainer){
+      throw new Error(
+        `Provided document container not found`
+      );
+    }
     publishingTask = await Task.ensure({
       involves: documentContainer.uri,
       taskType: TASK_TYPE_REGLEMENT_PUBLISH,
@@ -42,7 +47,7 @@ app.post("/publish-template/:documentContainerId", async (req, res, next) => {
   } catch (err) {
     console.log(err);
     const error = new Error(
-      `An error occurred while publishing the template for ${documentContainerId}: ${err}`
+      `An error occurred while publishing the template for document-container with id ${documentContainerId}: ${err}`
     );
     return next(error);
   }
