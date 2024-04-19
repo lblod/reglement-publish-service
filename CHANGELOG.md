@@ -6,6 +6,15 @@
 
 
 
+
+## 4.1.0 (2024-04-19)
+
+#### :rocket: Enhancement
+* [#12](https://github.com/lblod/reglement-publish-service/pull/12) Introduce single `/tasks/:id` route used for fetching task information ([@elpoelma](https://github.com/elpoelma))
+
+#### Committers: 1
+- Elena Poelman ([@elpoelma](https://github.com/elpoelma))
+
 ## 4.0.0 (2023-08-28)
 
 #### :rocket: Enhancement
