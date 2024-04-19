@@ -1,0 +1,18 @@
+steps:
+  install:
+    image: node:20-slim
+    commands:
+      - npm ci
+  lint:
+    image: node:20-slim
+    commands:
+      - npm run lint
+  build-dry-run:
+    image: plugins/docker
+    settings:
+      repo: lblod/reglement-publish-service
+      dry_run: true
+      purge: true
+when:
+  event:
+    - pull_request
