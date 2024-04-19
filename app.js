@@ -180,26 +180,6 @@ app.post('/regulatory-attachment-publication-tasks', async (req, res, next) => {
   }
 });
 
-app.get('/regulatory-attachment-publication-tasks/:id', async function (req, res) {
-  const taskUuid = req.params.id;
-  const task = await Task.find(taskUuid);
-  if (task) {
-    res.status(200).send({
-      data: {
-        id: task.id,
-        status: task.status,
-        type: task.type,
-        taskType: task.type,
-        relationships: {
-          "regulatory-attachment": task.regulatoryAttachmentPublication,
-        }
-      }
-    });
-  } else {
-    res.status(404).send(`task with id ${taskUuid} was not found`);
-  }
-});
-
 app.post('/snippet-list-publication-tasks', async (req, res, next) => {
   const documentContainerUuid = req.body.data.relationships['document-container'].data.id;
   const snippetListUuid = req.body.data.relationships['snippet-list'].data.id;
@@ -243,24 +223,19 @@ app.post('/snippet-list-publication-tasks', async (req, res, next) => {
   }
 });
 
-app.get('/snippet-list-publication-tasks/:id', async function (req, res) {
-  const taskUuid = req.params.id;
-  const task = await Task.find(taskUuid);
-
-  if (task) {
+app.get('/tasks/:id', async function (req, res) {
+  const taskId = req.params.id;
+  const task = await Task.find(taskId);
+  if(task){
     res.status(200).send({
       data: {
         id: task.id,
         status: task.status,
         type: task.type,
-        taskType: task.type,
-        relationships: {
-          "document-container": task.regulatoryAttachmentPublication,
-        }
       }
     });
   } else {
-    res.status(404).send(`task with id ${taskUuid} was not found`);
+    res.status(404).send(`task with id ${taskId} was not found`);
   }
 });
 
