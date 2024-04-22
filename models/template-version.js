@@ -12,24 +12,27 @@ export default class TemplateVersion {
   id;
   /** @type {string} */
   uri;
+  /** @type {title} */
+  title;
   /** @type {string} */
   derivedFrom;
 
   /**
    *
-   * @param {{uri: string, id: string, derivedFrom: string}}
+   * @param {{uri: string, id: string, title: string, derivedFrom: string}}
    */
-  constructor({ uri, id, derivedFrom }) {
+  constructor({ uri, id, title, derivedFrom }) {
     this.uri = uri;
     this.id = id;
+    this.title = title;
     this.derivedFrom = derivedFrom;
   }
 
   /**
    *
-   * @param {{ derivedFrom: string, content: string }}
+   * @param {{ derivedFrom: string, title: string, content: string }}
    */
-  static async create({ derivedFrom, content }) {
+  static async create({ derivedFrom, title, content }) {
     const now = new Date();
     const fileUuid = uuidv4();
     const fileName = `${fileUuid}.html`;
@@ -56,6 +59,7 @@ export default class TemplateVersion {
             a gn:TemplateVersie;
             a nfo:FileDataObject;
             mu:uuid ${sparqlEscapeString(id)};
+            dct:title ${sparqlEscapeString(title)};
             nfo:fileName ${sparqlEscapeString(fileName)};
             dct:format ${sparqlEscapeString("application/html")};
             nfo:fileSize ${fileSize};
@@ -76,8 +80,9 @@ export default class TemplateVersion {
       }`;
     await update(createTemplateQuery);
     return new TemplateVersion({
-      uri: uri,
-      id: id,
+      uri,
+      id,
+      title,
       derivedFrom,
     });
   }
@@ -86,6 +91,7 @@ export default class TemplateVersion {
     return new TemplateVersion({
       uri: binding.uri.value,
       id: binding.id.value,
+      title: binding.title.value,
       derivedFrom: binding.derivedFrom.value,
     });
   }
@@ -107,11 +113,13 @@ export default class TemplateVersion {
       PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
       PREFIX gn: <http://data.lblod.info/vocabularies/gelinktnotuleren/>
       PREFIX prov: <http://www.w3.org/ns/prov#>
+      PREFIX dct: <http://purl.org/dc/terms/>
 
-      SELECT ?id ?uri ?derivedFrom WHERE {
+      SELECT ?id ?uri ?title ?derivedFrom WHERE {
         ${bindStatement}
         ?uri a gn:TemplateVersie;
              mu:uuid ?id;
+             dct:title ?title;
              prov:derivedFrom ?derivedFrom.
       }
     `;

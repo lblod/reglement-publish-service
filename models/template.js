@@ -66,6 +66,7 @@ export default class Template {
       currentVersion = new TemplateVersion({
         uri: binding.currentVersion_uri.value,
         id: binding.currentVersion_id.value,
+        title: binding.currentVersion_title.value,
         derivedFrom: binding.currentVersion_derivedFrom.value,
       });
     }
@@ -94,8 +95,17 @@ export default class Template {
       PREFIX gn: <http://data.lblod.info/vocabularies/gelinktnotuleren/>
       PREFIX prov: <http://www.w3.org/ns/prov#>
       PREFIX pav: <http://purl.org/pav/>
+      PREFIX dct: <http://purl.org/dc/terms/>
 
-      SELECT ?id ?uri ?derivedFrom ?currentVersion_uri ?currentVersion_id ?currentVersion_derivedFrom WHERE {
+      SELECT 
+        ?id 
+        ?uri 
+        ?derivedFrom 
+        ?currentVersion_uri 
+        ?currentVersion_id 
+        ?currentVersion_title
+        ?currentVersion_derivedFrom 
+      WHERE {
         ${bindStatement}
         ?uri a gn:Template;
              mu:uuid ?id;
@@ -103,6 +113,7 @@ export default class Template {
         OPTIONAL {
           ?uri pav:hasCurrentVersion ?currentVersion_uri.
           ?currentVersion_uri mu:uuid ?currentVersion_id;
+                              dct:title ?currentVersion_title;
                               prov:derivedFrom ?currentVersion_derivedFrom.
         }
       }

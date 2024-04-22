@@ -27,6 +27,7 @@ export default class DocumentContainer {
     const currentVersion = new EditorDocument({
       uri: binding.currentVersion_uri.value,
       id: binding.currentVersion_id.value,
+      title: binding.currentVersion_title.value,
       content: binding.currentVersion_content.value,
     });
     return new DocumentContainer({
@@ -52,15 +53,25 @@ export default class DocumentContainer {
       PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
       PREFIX pav: <http://purl.org/pav/>
       PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+      PREFIX dcterms: <http://purl.org/dc/terms/>
       
-      SELECT ?id ?uri ?folder ?currentVersion_uri ?currentVersion_id ?currentVersion_content WHERE {
+      SELECT 
+        ?id 
+        ?uri 
+        ?folder 
+        ?currentVersion_uri 
+        ?currentVersion_id 
+        ?currentVersion_title 
+        ?currentVersion_content 
+      WHERE {
         ${bindStatement}
         ?uri a ext:DocumentContainer;
              mu:uuid ?id;
              ext:editorDocumentFolder ?folder;
              pav:hasCurrentVersion ?currentVersion_uri.
         ?currentVersion_uri mu:uuid ?currentVersion_id;
-                            ext:editorDocumentTemplateVersion ?currentVersion_content.
+                            ext:editorDocumentTemplateVersion ?currentVersion_content;
+                            dcterms:title ?currentVersion_title.
       }
     `;
     const result = await query(myQuery);

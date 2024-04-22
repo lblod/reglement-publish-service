@@ -68,12 +68,14 @@ app.post("/publish-template/:documentContainerId", async (req, res, next) => {
 
     const templateVersion = await TemplateVersion.create({
       derivedFrom: documentContainer.currentVersion.uri,
+      title: documentContainer.currentVersion.title,
       content: documentContainer.currentVersion.content,
     });
     const template = await Template.ensure({
       documentContainerUri: documentContainer.uri,
       templateType,
     });
+    console.log(template.currentVersion);
     if (template.currentVersion) {
       await template.currentVersion.markAsExpired();
     }
