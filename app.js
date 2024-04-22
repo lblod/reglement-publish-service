@@ -75,7 +75,6 @@ app.post("/publish-template/:documentContainerId", async (req, res, next) => {
       documentContainerUri: documentContainer.uri,
       templateType,
     });
-    console.log(template.currentVersion);
     if (template.currentVersion) {
       await template.currentVersion.markAsExpired();
     }
