@@ -97,17 +97,15 @@ export default class TemplateVersion {
   }
   /**
    *
-   * @param {({ derivedFrom?: string, uri?: string, id?: string })} queryOptions
+   * @param {({ derivedFrom: string } | { uri: string } | { id: string })} queryOptions
    */
   static async query(queryOptions) {
-    const { derivedFrom, uri, id } = queryOptions;
-    let bindStatement = uri
-      ? `BIND(${sparqlEscapeUri(uri)} AS ?uri)`
-      : id
-        ? `BIND(${sparqlEscapeUri(id)} AS ?id)`
-        : derivedFrom
-          ? `BIND(${sparqlEscapeUri(derivedFrom)} AS ?derivedFrom)`
-          : "";
+    const bindStatement =
+      "uri" in queryOptions
+        ? `BIND(${sparqlEscapeUri(queryOptions.uri)} AS ?uri)`
+        : "id" in queryOptions
+          ? `BIND(${sparqlEscapeUri(queryOptions.id)} AS ?id)`
+          : `BIND(${sparqlEscapeUri(queryOptions.derivedFrom)} AS ?derivedFrom)`;
 
     const myQuery = `
       PREFIX mu: <http://mu.semte.ch/vocabularies/core/>

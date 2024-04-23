@@ -39,15 +39,13 @@ export default class DocumentContainer {
   }
   /**
    *
-   * @param {({ uri?: string, id?: string })} queryOptions
+   * @param {({ uri: string } | { id: string })} queryOptions
    */
   static async query(queryOptions) {
-    const { uri, id } = queryOptions;
-    let bindStatement = uri
-      ? `BIND(${sparqlEscapeUri(uri)} AS ?uri)`
-      : id
-        ? `BIND(${sparqlEscapeString(id)} AS ?id)`
-        : "";
+    let bindStatement =
+      "uri" in queryOptions
+        ? `BIND(${sparqlEscapeUri(queryOptions.uri)} AS ?uri)`
+        : `BIND(${sparqlEscapeString(queryOptions.id)} AS ?id)`;
 
     const myQuery = `
       PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
