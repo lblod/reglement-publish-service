@@ -78,7 +78,7 @@ export default class Task {
      PREFIX    dct: <http://purl.org/dc/terms/>
      PREFIX    adms: <http://www.w3.org/ns/adms#>
      PREFIX    ext: <http://mu.semte.ch/vocabularies/ext/>
-     SELECT ?uri ?uuid ?involves ?status ?modified ?created ?regulatoryAttachmentPublication WHERE {
+     SELECT ?uri ?uuid ?status ?modified ?created WHERE {
        ?uri a task:Task;
             mu:uuid ?uuid;
             dct:created ?created;
