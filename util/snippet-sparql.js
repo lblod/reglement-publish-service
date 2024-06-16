@@ -1,7 +1,12 @@
-import {sparqlEscapeDateTime, sparqlEscapeString, sparqlEscapeUri, uuid} from 'mu';
-import {updateSudo as update} from "@lblod/mu-auth-sudo";
+import {
+  sparqlEscapeDateTime,
+  sparqlEscapeString,
+  sparqlEscapeUri,
+  uuid,
+} from "mu";
+import { updateSudo as update } from "@lblod/mu-auth-sudo";
 
-import {deletePublishedVersion} from "./common-sparql";
+import { deletePublishedVersion } from "./common-sparql";
 
 export const insertPublishedSnippetContainer = async ({
   documentContainer,
@@ -9,7 +14,7 @@ export const insertPublishedSnippetContainer = async ({
   snippetList,
   title,
   content,
-  publishingTaskUri
+  publishingTaskUri,
 }) => {
   const snippetContainerUuid = uuid();
   const snippetContainerUri = `http://lblod.data.gift/published-snippet-containers/${snippetContainerUuid}`;
@@ -24,6 +29,7 @@ export const insertPublishedSnippetContainer = async ({
         PREFIX pav: <http://purl.org/pav/>
         PREFIX dct: <http://purl.org/dc/terms/>
         PREFIX prov: <http://www.w3.org/ns/prov#>
+        
         INSERT DATA {
           GRAPH <http://mu.semte.ch/graphs/public> {
             ${sparqlEscapeUri(publishingTaskUri)} ext:publishedVersion ${sparqlEscapeUri(publishedSnippetUri)}.
@@ -56,8 +62,10 @@ export const updatePublishedSnippetContainer = async ({
 }) => {
   await deletePublishedVersion(publishedVersionResults);
 
-  const publishedContainerUri = publishedVersionResults.results.bindings[0].publishedContainer.value;
-  const previousVersionUri = publishedVersionResults.results.bindings[0].currentVersion.value;
+  const publishedContainerUri =
+    publishedVersionResults.results.bindings[0].publishedContainer.value;
+  const previousVersionUri =
+    publishedVersionResults.results.bindings[0].currentVersion.value;
 
   const snippetUuid = uuid();
   const publishedSnippetUri = `http://lblod.data.gift/published-snippets/${snippetUuid}`;
@@ -69,19 +77,22 @@ export const updatePublishedSnippetContainer = async ({
         PREFIX pav: <http://purl.org/pav/>
         PREFIX dct: <http://purl.org/dc/terms/>
         PREFIX prov: <http://www.w3.org/ns/prov#>
+
         INSERT DATA {
           GRAPH <http://mu.semte.ch/graphs/public> {
             ${sparqlEscapeUri(publishingTaskUri)} ext:publishedVersion ${sparqlEscapeUri(publishedSnippetUri)}.
-            ${sparqlEscapeUri(publishedContainerUri)} pav:hasCurrentVersion ${sparqlEscapeUri(publishedSnippetUri)}.
-            ${sparqlEscapeUri(publishedContainerUri)} pav:hasVersion ${sparqlEscapeUri(publishedSnippetUri)}.
-            ${sparqlEscapeUri(publishedContainerUri)} ext:fromSnippetList ${sparqlEscapeUri(snippetList.value)}.
+
+            ${sparqlEscapeUri(publishedContainerUri)} pav:hasCurrentVersion ${sparqlEscapeUri(publishedSnippetUri)};
+                                                      pav:hasVersion ${sparqlEscapeUri(publishedSnippetUri)};
+                                                      ext:fromSnippetList ${sparqlEscapeUri(snippetList.value)}.
+
             ${sparqlEscapeUri(publishedSnippetUri)} a ext:PublishedSnippet;
-              mu:uuid ${sparqlEscapeString(snippetUuid)};
-              dct:title ${sparqlEscapeString(title.value)};
-              ext:editorDocumentContent ${sparqlEscapeString(content.value)};
-              pav:createdOn ${sparqlEscapeDateTime(now)};
-              pav:previousVersion ${sparqlEscapeUri(previousVersionUri)};
-              prov:derivedFrom ${sparqlEscapeUri(editorDocument.value)}.
+                                                    mu:uuid ${sparqlEscapeString(snippetUuid)};
+                                                    dct:title ${sparqlEscapeString(title.value)};
+                                                    ext:editorDocumentContent ${sparqlEscapeString(content.value)};
+                                                    pav:createdOn ${sparqlEscapeDateTime(now)};
+                                                    pav:previousVersion ${sparqlEscapeUri(previousVersionUri)};
+                                                    prov:derivedFrom ${sparqlEscapeUri(editorDocument.value)}.
           }
         }
       `;

@@ -4,15 +4,21 @@ import {
   sparqlEscapeString,
   sparqlEscapeDateTime,
   // @ts-ignore
-  sparqlEscapeInt} from 'mu';
-import { querySudo as query, updateSudo as update } from '@lblod/mu-auth-sudo';
+  sparqlEscapeInt,
+} from "mu";
+import { querySudo as query, updateSudo as update } from "@lblod/mu-auth-sudo";
 
-export const TASK_STATUS_FAILURE =  "http://lblod.data.gift/besluit-publicatie-melding-statuses/failure";
-export const TASK_STATUS_CREATED =  "http://lblod.data.gift/besluit-publicatie-melding-statuses/created";
-export const TASK_STATUS_SUCCESS =  "http://lblod.data.gift/besluit-publicatie-melding-statuses/success";
-export const TASK_STATUS_RUNNING = "http://lblod.data.gift/besluit-publicatie-melding-statuses/ongoing";
+export const TASK_STATUS_FAILURE =
+  "http://lblod.data.gift/besluit-publicatie-melding-statuses/failure";
+export const TASK_STATUS_CREATED =
+  "http://lblod.data.gift/besluit-publicatie-melding-statuses/created";
+export const TASK_STATUS_SUCCESS =
+  "http://lblod.data.gift/besluit-publicatie-melding-statuses/success";
+export const TASK_STATUS_RUNNING =
+  "http://lblod.data.gift/besluit-publicatie-melding-statuses/ongoing";
 
-export const TASK_TYPE_REGLEMENT_PUBLISH = "regulatory-attachment-publication-tasks";
+export const TASK_TYPE_REGLEMENT_PUBLISH =
+  "regulatory-attachment-publication-tasks";
 export const TASK_TYPE_SNIPPET_PUBLISH = "snippet-list-publication-tasks";
 
 export default class Task {
@@ -21,37 +27,47 @@ export default class Task {
     const uri = `http://lblod.data.gift/tasks/${id}`;
     const created = Date.now();
     const queryString = `
-     PREFIX    mu: <http://mu.semte.ch/vocabularies/core/>
-     PREFIX    nuao: <http://www.semanticdesktop.org/ontologies/2010/01/25/nuao#>
-     PREFIX    task: <http://redpencil.data.gift/vocabularies/tasks/>
-     PREFIX    dct: <http://purl.org/dc/terms/>
-     PREFIX    adms: <http://www.w3.org/ns/adms#>
+     PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+     PREFIX nuao: <http://www.semanticdesktop.org/ontologies/2010/01/25/nuao#>
+     PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
+     PREFIX dct: <http://purl.org/dc/terms/>
+     PREFIX adms: <http://www.w3.org/ns/adms#>
+
      INSERT DATA {
         ${sparqlEscapeUri(uri)} a task:Task;
-                                                mu:uuid ${sparqlEscapeString(id)};
-                                                adms:status ${sparqlEscapeUri(TASK_STATUS_CREATED)};
-                                                task:numberOfRetries ${sparqlEscapeInt(0)};
-                                                dct:created ${sparqlEscapeDateTime(created)};
-                                                dct:modified ${sparqlEscapeDateTime(created)};
-                                                dct:creator <http://lblod.data.gift/services/reglement-publish-service>;
-                                                dct:type ${sparqlEscapeString(taskType)};
-                                                nuao:involves ${sparqlEscapeUri(involves)}.
+                                mu:uuid ${sparqlEscapeString(id)};
+                                adms:status ${sparqlEscapeUri(TASK_STATUS_CREATED)};
+                                task:numberOfRetries ${sparqlEscapeInt(0)};
+                                dct:created ${sparqlEscapeDateTime(created)};
+                                dct:modified ${sparqlEscapeDateTime(created)};
+                                dct:creator <http://lblod.data.gift/services/reglement-publish-service>;
+                                dct:type ${sparqlEscapeString(taskType)};
+                                nuao:involves ${sparqlEscapeUri(involves)}.
     }
   `;
     await update(queryString);
 
-    return new Task({id, type: taskType, involves, created, modified: created, status: TASK_STATUS_CREATED, uri});
+    return new Task({
+      id,
+      type: taskType,
+      involves,
+      created,
+      modified: created,
+      status: TASK_STATUS_CREATED,
+      uri,
+    });
   }
 
   static async find(uuid) {
     const result = await query(`
-     PREFIX    mu: <http://mu.semte.ch/vocabularies/core/>
-     PREFIX    nuao: <http://www.semanticdesktop.org/ontologies/2010/01/25/nuao#>
-     PREFIX    task: <http://redpencil.data.gift/vocabularies/tasks/>
-     PREFIX    dct: <http://purl.org/dc/terms/>
-     PREFIX    adms: <http://www.w3.org/ns/adms#>
-     PREFIX    ext: <http://mu.semte.ch/vocabularies/ext/>
-     SELECT ?uri ?uuid ?type ?involves ?status ?modified ?created  WHERE {
+     PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+     PREFIX nuao: <http://www.semanticdesktop.org/ontologies/2010/01/25/nuao#>
+     PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
+     PREFIX dct: <http://purl.org/dc/terms/>
+     PREFIX adms: <http://www.w3.org/ns/adms#>
+     PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+
+     SELECT ?uri ?uuid ?type ?involves ?status ?modified ?created WHERE {
        BIND(${sparqlEscapeString(uuid)} AS ?uuid)
        ?uri a task:Task;
             mu:uuid ?uuid;
@@ -65,20 +81,19 @@ export default class Task {
    `);
     if (result.results.bindings.length) {
       return Task.fromBinding(result.results.bindings[0]);
-    }
-    else
-      return null;
+    } else return null;
   }
 
-  static async query({involves, taskType = TASK_TYPE_REGLEMENT_PUBLISH}) {
+  static async query({ involves, taskType = TASK_TYPE_REGLEMENT_PUBLISH }) {
     const result = await query(`
-     PREFIX    mu: <http://mu.semte.ch/vocabularies/core/>
-     PREFIX    nuao: <http://www.semanticdesktop.org/ontologies/2010/01/25/nuao#>
-     PREFIX    task: <http://redpencil.data.gift/vocabularies/tasks/>
-     PREFIX    dct: <http://purl.org/dc/terms/>
-     PREFIX    adms: <http://www.w3.org/ns/adms#>
-     PREFIX    ext: <http://mu.semte.ch/vocabularies/ext/>
-     SELECT ?uri ?uuid ?status ?modified ?created WHERE {
+     PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+     PREFIX nuao: <http://www.semanticdesktop.org/ontologies/2010/01/25/nuao#>
+     PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
+     PREFIX dct: <http://purl.org/dc/terms/>
+     PREFIX adms: <http://www.w3.org/ns/adms#>
+     PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+
+     SELECT ?uri ?uuid ?involves ?status ?modified ?created ?regulatoryAttachmentPublication WHERE {
        ?uri a task:Task;
             mu:uuid ?uuid;
             dct:created ?created;
@@ -90,17 +105,28 @@ export default class Task {
      }
    `);
     if (result.results.bindings.length) {
-      return Task.fromBinding({...result.results.bindings[0],
+      return Task.fromBinding({
+        ...result.results.bindings[0],
         type: { value: taskType },
-        involves: { value: involves }
+        involves: { value: involves },
       });
+    } else return null;
+  }
+
+  /**
+   * @param {{involves: string, taskType: string}}
+   */
+  static async ensure({ involves, taskType }) {
+    let task = await this.query({ involves: involves, taskType });
+
+    if (!task) {
+      task = await this.create(involves, taskType);
     }
-    else
-      return null;
+    return task;
   }
 
   static fromBinding(binding) {
-    return new Task( {
+    return new Task({
       id: binding.uuid.value,
       uri: binding.uri.value,
       created: binding.created.value,
@@ -111,7 +137,7 @@ export default class Task {
     });
   }
 
-  constructor({id, uri, created, status, modified, type, involves}) {
+  constructor({ id, uri, created, status, modified, type, involves }) {
     this.id = id;
     this.type = type;
     this.involves = involves;
@@ -123,25 +149,25 @@ export default class Task {
 
   async updateStatus(status, reason) {
     const queryString = `
-     PREFIX    mu: <http://mu.semte.ch/vocabularies/core/>
-     PREFIX    nuao: <http://www.semanticdesktop.org/ontologies/2010/01/25/nuao#>
-     PREFIX    task: <http://redpencil.data.gift/vocabularies/tasks/>
-     PREFIX    dct: <http://purl.org/dc/terms/>
-     PREFIX adms: <http://www.w3.org/ns/adms#>
-     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+      PREFIX nuao: <http://www.semanticdesktop.org/ontologies/2010/01/25/nuao#>
+      PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
+      PREFIX dct: <http://purl.org/dc/terms/>
+      PREFIX adms: <http://www.w3.org/ns/adms#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-     DELETE {
-       ?uri adms:status ?status.
-     }
-     INSERT {
-       ?uri adms:status ${sparqlEscapeUri(status)}.
-       ${reason ? `?uri rdfs:comment ${sparqlEscapeString(reason)}.` : ''}
-     }
-     WHERE {
-         ?uri a task:Task;
-              mu:uuid ${sparqlEscapeString(this.id)};
-              adms:status ?status.
-    }`;
+      DELETE {
+        ?uri adms:status ?status.
+      }
+      INSERT {
+        ?uri adms:status ${sparqlEscapeUri(status)}.
+        ${reason ? `?uri rdfs:comment ${sparqlEscapeString(reason)}.` : ""}
+      }
+      WHERE {
+        ?uri a task:Task;
+            mu:uuid ${sparqlEscapeString(this.id)};
+            adms:status ?status.
+      }`;
     await update(queryString);
   }
 }
