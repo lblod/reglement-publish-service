@@ -7,6 +7,21 @@
 
 
 
+
+## 5.0.0 (2024-06-16)
+
+#### :boom: Breaking Change
+* [#14](https://github.com/lblod/reglement-publish-service/pull/14) Restructure and support for decision templates ([@elpoelma](https://github.com/elpoelma))
+
+#### :house: Internal
+* [#13](https://github.com/lblod/reglement-publish-service/pull/13) Generalize `task` interface ([@elpoelma](https://github.com/elpoelma))
+* [#15](https://github.com/lblod/reglement-publish-service/pull/15) Pin `semtech/mu-javascript-template` base-image to 1.8.0 ([@elpoelma](https://github.com/elpoelma))
+* [#16](https://github.com/lblod/reglement-publish-service/pull/16) Move to woodpecker CI ([@elpoelma](https://github.com/elpoelma))
+
+#### Committers: 1
+- Elena Poelman ([@elpoelma](https://github.com/elpoelma))
+
+
 ## 4.1.0 (2024-04-19)
 
 #### :rocket: Enhancement
