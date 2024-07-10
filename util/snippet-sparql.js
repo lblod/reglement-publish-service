@@ -62,8 +62,8 @@ export const updatePublishedSnippetContainer = async ({
 }) => {
   await deletePublishedVersion(publishedVersionResults);
 
-  const publishedContainerUri =
-    publishedVersionResults.results.bindings[0].publishedContainer.value;
+  const templateUri =
+    publishedVersionResults.results.bindings[0].template.value;
   const previousVersionUri =
     publishedVersionResults.results.bindings[0].currentVersion.value;
 
@@ -82,7 +82,7 @@ export const updatePublishedSnippetContainer = async ({
           GRAPH <http://mu.semte.ch/graphs/public> {
             ${sparqlEscapeUri(publishingTaskUri)} ext:publishedVersion ${sparqlEscapeUri(publishedSnippetUri)}.
 
-            ${sparqlEscapeUri(publishedContainerUri)} pav:hasCurrentVersion ${sparqlEscapeUri(publishedSnippetUri)};
+            ${sparqlEscapeUri(templateUri)} pav:hasCurrentVersion ${sparqlEscapeUri(publishedSnippetUri)};
                                                       pav:hasVersion ${sparqlEscapeUri(publishedSnippetUri)};
                                                       ext:fromSnippetList ${sparqlEscapeUri(snippetList.value)}.
 
