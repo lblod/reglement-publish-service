@@ -8,6 +8,15 @@
 
 
 
+
+## 5.0.1 (2024-07-16)
+
+#### :bug: Bug Fix
+* [#17](https://github.com/lblod/reglement-publish-service/pull/17) Fix crash when updating snippets from renamed SPARQL variable ([@piemonkey](https://github.com/piemonkey))
+
+#### Committers: 1
+- [@piemonkey](https://github.com/piemonkey)
+
 ## 5.0.0 (2024-06-16)
 
 #### :boom: Breaking Change
