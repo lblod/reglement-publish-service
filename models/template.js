@@ -68,6 +68,9 @@ export default class Template {
         id: binding.currentVersion_id.value,
         title: binding.currentVersion_title.value,
         derivedFrom: binding.currentVersion_derivedFrom.value,
+        validThrough:
+          binding.currentVersion_validThrough?.value &&
+          new Date(binding.currentVersion_validThrough.value),
       });
     }
     return new Template({
@@ -95,6 +98,7 @@ export default class Template {
       PREFIX prov: <http://www.w3.org/ns/prov#>
       PREFIX pav: <http://purl.org/pav/>
       PREFIX dct: <http://purl.org/dc/terms/>
+      PREFIX schema: <http://schema.org/>
 
       SELECT 
         ?id 
@@ -104,6 +108,7 @@ export default class Template {
         ?currentVersion_id 
         ?currentVersion_title
         ?currentVersion_derivedFrom 
+        ?currentVersion_validThrough
       WHERE {
         ${bindStatement}
         ?uri a gn:Template;
@@ -114,6 +119,9 @@ export default class Template {
           ?currentVersion_uri mu:uuid ?currentVersion_id;
                               dct:title ?currentVersion_title;
                               prov:derivedFrom ?currentVersion_derivedFrom.
+        }
+        OPTIONAL {
+          ?currentVersion_uri schema:validThrough ?currentVersion_validThrough.
         }
       }
     `;

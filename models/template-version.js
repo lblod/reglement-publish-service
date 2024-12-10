@@ -16,16 +16,19 @@ export default class TemplateVersion {
   title;
   /** @type {string} */
   derivedFrom;
+  /** @type {Date | undefined} */
+  validThrough;
 
   /**
    *
-   * @param {{uri: string, id: string, title: string, derivedFrom: string}}
+   * @param {{uri: string, id: string, title: string, derivedFrom: string, validThrough?: Date}}
    */
-  constructor({ uri, id, title, derivedFrom }) {
+  constructor({ uri, id, title, derivedFrom, validThrough }) {
     this.uri = uri;
     this.id = id;
     this.title = title;
     this.derivedFrom = derivedFrom;
+    this.validThrough = validThrough;
   }
 
   /**
@@ -93,6 +96,8 @@ export default class TemplateVersion {
       id: binding.id.value,
       title: binding.title.value,
       derivedFrom: binding.derivedFrom.value,
+      validThrough:
+        binding.validThrough?.value && new Date(binding.validThrough.value),
     });
   }
   /**
@@ -112,13 +117,17 @@ export default class TemplateVersion {
       PREFIX gn: <http://data.lblod.info/vocabularies/gelinktnotuleren/>
       PREFIX prov: <http://www.w3.org/ns/prov#>
       PREFIX dct: <http://purl.org/dc/terms/>
+      PREFIX schema: <http://schema.org/>
 
-      SELECT ?id ?uri ?title ?derivedFrom WHERE {
+      SELECT ?id ?uri ?title ?derivedFrom ?validThrough WHERE {
         ${bindStatement}
         ?uri a gn:TemplateVersie;
              mu:uuid ?id;
              dct:title ?title;
              prov:derivedFrom ?derivedFrom.
+        OPTIONAL {
+          ?uri schema:validThrough ?validThrough.
+        }
       }
     `;
     const result = await query(myQuery);

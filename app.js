@@ -1,4 +1,5 @@
 import { app, errorHandler } from "mu";
+import { isAfter } from "date-fns/isAfter";
 import Task, {
   TASK_STATUS_FAILURE,
   TASK_STATUS_RUNNING,
@@ -74,7 +75,10 @@ app.post("/publish-template/:documentContainerId", async (req, res, next) => {
       templateType,
     });
     if (template.currentVersion) {
-      await template.currentVersion.markAsExpired();
+      const validThrough = template.currentVersion.validThrough;
+      if (!validThrough || isAfter(validThrough, Date.now())) {
+        await template.currentVersion.markAsExpired();
+      }
     }
     await template.setCurrentVersion(templateVersion);
     await publishingTask.updateStatus(TASK_STATUS_SUCCESS);
