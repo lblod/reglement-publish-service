@@ -9,6 +9,12 @@
 
 
 
+## 5.1.0 (2024-12-10)
+
+* [#18](https://github.com/lblod/reglement-publish-service/pull/18) Only expire template versions that are already expired ([@piemonkey](https://github.com/piemonkey))
+
+
+
 ## 5.0.1 (2024-07-16)
 
 #### :bug: Bug Fix
