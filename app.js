@@ -1,9 +1,7 @@
 import { app, errorHandler } from "mu";
 import { isAfter } from "date-fns/isAfter";
 import Task, {
-  TASK_STATUS_FAILURE,
-  TASK_STATUS_RUNNING,
-  TASK_STATUS_SUCCESS,
+  JOB_STATUSES,
   TASK_TYPE_REGLEMENT_PUBLISH,
   TASK_TYPE_SNIPPET_PUBLISH,
 } from "./models/task";
@@ -54,7 +52,7 @@ app.post("/publish-template/:documentContainerId", async (req, res, next) => {
     return next(error);
   }
   try {
-    await publishingTask.updateStatus(TASK_STATUS_RUNNING);
+    await publishingTask.updateStatus(JOB_STATUSES.busy);
 
     const templateType =
       documentContainer.folder === DECISION_FOLDER
@@ -84,10 +82,10 @@ app.post("/publish-template/:documentContainerId", async (req, res, next) => {
       }
     }
     await template.setCurrentVersion(templateVersion);
-    await publishingTask.updateStatus(TASK_STATUS_SUCCESS);
+    await publishingTask.updateStatus(JOB_STATUSES.success);
   } catch (err) {
     console.log(err);
-    publishingTask.updateStatus(TASK_STATUS_FAILURE, err.message);
+    publishingTask.updateStatus(JOB_STATUSES.failure, err.message);
   }
 });
 
@@ -107,7 +105,7 @@ app.post("/snippet-list-publication-tasks", async (req, res, next) => {
       taskType: TASK_TYPE_SNIPPET_PUBLISH,
     });
 
-    await publishingTask.updateStatus(TASK_STATUS_RUNNING);
+    await publishingTask.updateStatus(JOB_STATUSES.busy);
     const publishedVersionResults =
       await getPublishedVersion(documentContainerUri);
     const snippetList = await getSnippetList(snippetListUuid);
@@ -127,7 +125,7 @@ app.post("/snippet-list-publication-tasks", async (req, res, next) => {
       });
     }
 
-    await publishingTask.updateStatus(TASK_STATUS_SUCCESS);
+    await publishingTask.updateStatus(JOB_STATUSES.success);
 
     res.json({
       data: {
@@ -139,7 +137,7 @@ app.post("/snippet-list-publication-tasks", async (req, res, next) => {
   } catch (error) {
     console.log(error);
     if (publishingTask) {
-      publishingTask.updateStatus(TASK_STATUS_FAILURE, error.message);
+      publishingTask.updateStatus(JOB_STATUSES.failure, error.message);
     }
     next(error);
   }
