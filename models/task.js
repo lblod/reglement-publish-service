@@ -10,13 +10,12 @@ import {
 } from "mu";
 
 export const JOB_STATUSES = {
-  scheduled: 'http://redpencil.data.gift/id/concept/JobStatus/scheduled',
-  busy: 'http://redpencil.data.gift/id/concept/JobStatus/busy',
-  success: 'http://redpencil.data.gift/id/concept/JobStatus/success',
-  failed: 'http://redpencil.data.gift/id/concept/JobStatus/failed',
-  canceled: 'http://redpencil.data.gift/id/concept/JobStatus/canceled',
+  scheduled: "http://redpencil.data.gift/id/concept/JobStatus/scheduled",
+  busy: "http://redpencil.data.gift/id/concept/JobStatus/busy",
+  success: "http://redpencil.data.gift/id/concept/JobStatus/success",
+  failed: "http://redpencil.data.gift/id/concept/JobStatus/failed",
+  canceled: "http://redpencil.data.gift/id/concept/JobStatus/canceled",
 };
-
 
 export const TASK_TYPE_REGLEMENT_PUBLISH =
   "regulatory-attachment-publication-tasks";
