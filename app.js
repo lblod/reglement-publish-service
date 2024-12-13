@@ -143,20 +143,4 @@ app.post("/snippet-list-publication-tasks", async (req, res, next) => {
   }
 });
 
-app.get("/tasks/:id", async function (req, res) {
-  const taskId = req.params.id;
-  const task = await Task.find(taskId);
-  if (task) {
-    res.status(200).send({
-      data: {
-        id: task.id,
-        status: task.status,
-        type: task.type,
-      },
-    });
-  } else {
-    res.status(404).send(`task with id ${taskId} was not found`);
-  }
-});
-
 app.use(errorHandler);
