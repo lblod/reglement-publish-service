@@ -1,5 +1,4 @@
-import { sparqlEscapeUri, sparqlEscapeString } from "mu";
-import { querySudo as query, updateSudo as update } from "@lblod/mu-auth-sudo";
+import { sparqlEscapeUri, sparqlEscapeString, query, update } from "mu";
 
 export const getPublishedVersion = async (documentContainerUri) => {
   const publishedVersionQuery = `
@@ -30,9 +29,7 @@ export const deletePublishedVersion = async (publishedVersionResults) => {
         PREFIX pav: <http://purl.org/pav/>
 
         DELETE WHERE {
-          GRAPH <http://mu.semte.ch/graphs/public> {
-            ${sparqlEscapeUri(templateUri)} pav:hasCurrentVersion ?currentVersion.
-          }
+          ${sparqlEscapeUri(templateUri)} pav:hasCurrentVersion ?currentVersion.
         }
       `;
 
@@ -49,15 +46,13 @@ export const getEditorDocument = async (documentContainerUuid) => {
       PREFIX pav: <http://purl.org/pav/>
       PREFIX dct: <http://purl.org/dc/terms/>
 
-      SELECT ?documentContainer ?editorDocument ?graph ?title ?content
+      SELECT ?documentContainer ?editorDocument ?title ?content
       WHERE {
-        GRAPH ?graph {
-          ?documentContainer mu:uuid ${sparqlEscapeString(documentContainerUuid)};
-                             pav:hasCurrentVersion ?editorDocument.
-          ?editorDocument dct:title ?title ;
-                          ext:editorDocumentContent ?content ;
-                          pav:createdOn ?createdOn .
-        }
+        ?documentContainer mu:uuid ${sparqlEscapeString(documentContainerUuid)};
+                            pav:hasCurrentVersion ?editorDocument.
+        ?editorDocument dct:title ?title ;
+                        ext:editorDocumentContent ?content ;
+                        pav:createdOn ?createdOn .
       }
     `;
 

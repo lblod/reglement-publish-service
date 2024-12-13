@@ -5,8 +5,9 @@ import {
   sparqlEscapeDateTime,
   // @ts-ignore
   sparqlEscapeInt,
+  query,
+  update,
 } from "mu";
-import { querySudo as query, updateSudo as update } from "@lblod/mu-auth-sudo";
 
 export const TASK_STATUS_FAILURE =
   "http://lblod.data.gift/besluit-publicatie-melding-statuses/failure";
