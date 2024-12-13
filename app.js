@@ -40,8 +40,10 @@ app.post("/publish-template/:documentContainerId", async (req, res, next) => {
     res.json({
       data: {
         id: publishingTask.id,
+attributes: {
         status: publishingTask.status,
         type: publishingTask.type,
+},
       },
     });
   } catch (err) {
@@ -105,6 +107,16 @@ app.post("/snippet-list-publication-tasks", async (req, res, next) => {
       taskType: TASK_TYPE_SNIPPET_PUBLISH,
     });
 
+    res.json({
+      data: {
+        id: publishingTask.id,
+        attributes: {
+          status: publishingTask.status,
+          type: publishingTask.type,
+        },
+      },
+    });
+
     await publishingTask.updateStatus(JOB_STATUSES.busy);
     const publishedVersionResults =
       await getPublishedVersion(documentContainerUri);
@@ -126,14 +138,6 @@ app.post("/snippet-list-publication-tasks", async (req, res, next) => {
     }
 
     await publishingTask.updateStatus(JOB_STATUSES.success);
-
-    res.json({
-      data: {
-        id: publishingTask.id,
-        status: "accepted",
-        type: publishingTask.type,
-      },
-    });
   } catch (error) {
     console.log(error);
     if (publishingTask) {
