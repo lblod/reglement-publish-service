@@ -9,14 +9,13 @@ import {
   update,
 } from "mu";
 
-export const TASK_STATUS_FAILURE =
-  "http://lblod.data.gift/besluit-publicatie-melding-statuses/failure";
-export const TASK_STATUS_CREATED =
-  "http://lblod.data.gift/besluit-publicatie-melding-statuses/created";
-export const TASK_STATUS_SUCCESS =
-  "http://lblod.data.gift/besluit-publicatie-melding-statuses/success";
-export const TASK_STATUS_RUNNING =
-  "http://lblod.data.gift/besluit-publicatie-melding-statuses/ongoing";
+export const JOB_STATUSES = {
+  scheduled: "http://redpencil.data.gift/id/concept/JobStatus/scheduled",
+  busy: "http://redpencil.data.gift/id/concept/JobStatus/busy",
+  success: "http://redpencil.data.gift/id/concept/JobStatus/success",
+  failed: "http://redpencil.data.gift/id/concept/JobStatus/failed",
+  canceled: "http://redpencil.data.gift/id/concept/JobStatus/canceled",
+};
 
 export const TASK_TYPE_REGLEMENT_PUBLISH =
   "regulatory-attachment-publication-tasks";
@@ -37,7 +36,7 @@ export default class Task {
      INSERT DATA {
         ${sparqlEscapeUri(uri)} a task:Task;
                                 mu:uuid ${sparqlEscapeString(id)};
-                                adms:status ${sparqlEscapeUri(TASK_STATUS_CREATED)};
+                                adms:status ${sparqlEscapeUri(JOB_STATUSES.scheduled)};
                                 task:numberOfRetries ${sparqlEscapeInt(0)};
                                 dct:created ${sparqlEscapeDateTime(created)};
                                 dct:modified ${sparqlEscapeDateTime(created)};
@@ -54,7 +53,7 @@ export default class Task {
       involves,
       created,
       modified: created,
-      status: TASK_STATUS_CREATED,
+      status: JOB_STATUSES.scheduled,
       uri,
     });
   }
