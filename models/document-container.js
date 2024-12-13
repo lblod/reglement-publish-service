@@ -1,6 +1,5 @@
 import EditorDocument from "./editor-document";
-import { sparqlEscapeUri, sparqlEscapeString } from "mu";
-import { querySudo as query } from "@lblod/mu-auth-sudo";
+import { sparqlEscapeUri, sparqlEscapeString, query } from "mu";
 
 export default class DocumentContainer {
   /** @type {string} */

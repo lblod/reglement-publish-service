@@ -21,6 +21,9 @@ import { DECISION_FOLDER, RS_FOLDER } from "./constants";
 import Template from "./models/template";
 import TemplateVersion from "./models/template-version";
 import DocumentContainer from "./models/document-container";
+import { validateUser } from "./middleware";
+
+app.use(validateUser);
 
 app.post("/publish-template/:documentContainerId", async (req, res, next) => {
   const documentContainerId = req.params.documentContainerId;

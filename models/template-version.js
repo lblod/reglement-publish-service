@@ -3,8 +3,9 @@ import {
   uuid as uuidv4,
   sparqlEscapeDateTime,
   sparqlEscapeString,
+  query,
+  update,
 } from "mu";
-import { querySudo as query, updateSudo as update } from "@lblod/mu-auth-sudo";
 import fs from "fs";
 
 export default class TemplateVersion {
@@ -57,29 +58,27 @@ export default class TemplateVersion {
       PREFIX nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>
 
       INSERT DATA {
-        GRAPH <http://mu.semte.ch/graphs/public> {
-          ${sparqlEscapeUri(uri)} 
-            a gn:TemplateVersie;
-            a nfo:FileDataObject;
-            mu:uuid ${sparqlEscapeString(id)};
-            dct:title ${sparqlEscapeString(title)};
-            nfo:fileName ${sparqlEscapeString(fileName)};
-            dct:format ${sparqlEscapeString("application/html")};
-            nfo:fileSize ${fileSize};
-            dbpedia:extension ${sparqlEscapeString("html")};
-            nfo:fileCreated ${sparqlEscapeDateTime(now)};
-            prov:derivedFrom ${sparqlEscapeUri(derivedFrom)}.
+        ${sparqlEscapeUri(uri)} 
+          a gn:TemplateVersie;
+          a nfo:FileDataObject;
+          mu:uuid ${sparqlEscapeString(id)};
+          dct:title ${sparqlEscapeString(title)};
+          nfo:fileName ${sparqlEscapeString(fileName)};
+          dct:format ${sparqlEscapeString("application/html")};
+          nfo:fileSize ${fileSize};
+          dbpedia:extension ${sparqlEscapeString("html")};
+          nfo:fileCreated ${sparqlEscapeDateTime(now)};
+          prov:derivedFrom ${sparqlEscapeUri(derivedFrom)}.
 
-          ${sparqlEscapeUri(physicalFileUri)} 
-            a nfo:FileDataObject;
-            mu:uuid ${sparqlEscapeString(physicalFileUuid)};
-            nfo:fileName ${sparqlEscapeString(fileName)};
-            dct:format ${sparqlEscapeString("application/html")};
-            nfo:fileSize ${fileSize};
-            dbpedia:extension ${sparqlEscapeString("html")};
-            nfo:fileCreated ${sparqlEscapeDateTime(now)};
-            nie:dataSource ${sparqlEscapeUri(uri)}.
-        }
+        ${sparqlEscapeUri(physicalFileUri)} 
+          a nfo:FileDataObject;
+          mu:uuid ${sparqlEscapeString(physicalFileUuid)};
+          nfo:fileName ${sparqlEscapeString(fileName)};
+          dct:format ${sparqlEscapeString("application/html")};
+          nfo:fileSize ${fileSize};
+          dbpedia:extension ${sparqlEscapeString("html")};
+          nfo:fileCreated ${sparqlEscapeDateTime(now)};
+          nie:dataSource ${sparqlEscapeUri(uri)}.
       }`;
     await update(createTemplateQuery);
     return new TemplateVersion({
@@ -144,9 +143,7 @@ export default class TemplateVersion {
       PREFIX schema: <http://schema.org/>
 
       INSERT DATA {
-        GRAPH <http://mu.semte.ch/graphs/public> {
-          ${sparqlEscapeUri(this.uri)} schema:validThrough ${sparqlEscapeDateTime(now)}.
-        }
+        ${sparqlEscapeUri(this.uri)} schema:validThrough ${sparqlEscapeDateTime(now)}.
       }
     `;
     await update(myQuery);

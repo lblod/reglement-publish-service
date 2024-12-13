@@ -1,5 +1,10 @@
-import { sparqlEscapeUri, uuid as uuidv4, sparqlEscapeString } from "mu";
-import { querySudo as query, updateSudo as update } from "@lblod/mu-auth-sudo";
+import {
+  sparqlEscapeUri,
+  uuid as uuidv4,
+  sparqlEscapeString,
+  query,
+  update,
+} from "mu";
 import TemplateVersion from "./template-version";
 
 /**
@@ -44,12 +49,10 @@ export default class Template {
       PREFIX prov: <http://www.w3.org/ns/prov#>
 
       INSERT DATA {
-        GRAPH <http://mu.semte.ch/graphs/public> {
-          ${sparqlEscapeUri(templateUri)} a gn:Template;
-                                          a ${sparqlEscapeUri(typeUri)};
-                                          prov:derivedFrom ${sparqlEscapeUri(derivedFrom)};
-                                          mu:uuid ${sparqlEscapeString(templateId)}.
-        }
+        ${sparqlEscapeUri(templateUri)} a gn:Template;
+                                        a ${sparqlEscapeUri(typeUri)};
+                                        prov:derivedFrom ${sparqlEscapeUri(derivedFrom)};
+                                        mu:uuid ${sparqlEscapeString(templateId)}.
       }
     `;
     await update(createTemplateQuery);
@@ -154,16 +157,12 @@ export default class Template {
       PREFIX pav: <http://purl.org/pav/>
 
       DELETE WHERE {
-        GRAPH <http://mu.semte.ch/graphs/public> {
-          ${sparqlEscapeUri(this.uri)} pav:hasCurrentVersion ?v.
-        }
+        ${sparqlEscapeUri(this.uri)} pav:hasCurrentVersion ?v.
       };
 
       INSERT DATA {
-        GRAPH <http://mu.semte.ch/graphs/public> {
-          ${sparqlEscapeUri(this.uri)} pav:hasCurrentVersion ${sparqlEscapeUri(templateVersion.uri)};
-                      pav:hasVersion ${sparqlEscapeUri(templateVersion.uri)}.
-        }
+        ${sparqlEscapeUri(this.uri)} pav:hasCurrentVersion ${sparqlEscapeUri(templateVersion.uri)};
+                    pav:hasVersion ${sparqlEscapeUri(templateVersion.uri)}.
       }
     `;
     await update(myQuery);
