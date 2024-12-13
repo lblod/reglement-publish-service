@@ -34,16 +34,16 @@ app.post("/publish-template/:documentContainerId", async (req, res, next) => {
       throw new Error(`Provided document container not found`);
     }
     publishingTask = await Task.ensure({
-      involves: documentContainer.uri,
+      involves: documentContainer.currentVersion.uri,
       taskType: TASK_TYPE_REGLEMENT_PUBLISH,
     });
     res.json({
       data: {
         id: publishingTask.id,
-attributes: {
-        status: publishingTask.status,
-        type: publishingTask.type,
-},
+        attributes: {
+          status: publishingTask.status,
+          type: publishingTask.type,
+        },
       },
     });
   } catch (err) {
