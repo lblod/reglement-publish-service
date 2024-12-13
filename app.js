@@ -1,20 +1,6 @@
 import { app, errorHandler } from "mu";
 import { isAfter } from "date-fns/isAfter";
-import Task, {
-  JOB_STATUSES,
-  TASK_TYPE_REGLEMENT_PUBLISH,
-  TASK_TYPE_SNIPPET_PUBLISH,
-} from "./models/task";
-import {
-  getEditorDocument,
-  getPublishedVersion,
-  getSnippetList,
-  hasPublishedVersion,
-} from "./util/common-sparql";
-import {
-  insertPublishedSnippetContainer,
-  updatePublishedSnippetContainer,
-} from "./util/snippet-sparql";
+import Task, { JOB_STATUSES, TASK_TYPE_REGLEMENT_PUBLISH } from "./models/task";
 import { DECISION_FOLDER, RS_FOLDER } from "./constants";
 import Template from "./models/template";
 import TemplateVersion from "./models/template-version";
@@ -88,62 +74,6 @@ app.post("/publish-template/:documentContainerId", async (req, res, next) => {
   } catch (err) {
     console.log(err);
     publishingTask.updateStatus(JOB_STATUSES.failure, err.message);
-  }
-});
-
-app.post("/snippet-list-publication-tasks", async (req, res, next) => {
-  const documentContainerUuid =
-    req.body.data.relationships["document-container"].data.id;
-  const snippetListUuid = req.body.data.relationships["snippet-list"].data.id;
-
-  let publishingTask;
-
-  try {
-    const editorDocument = await getEditorDocument(documentContainerUuid);
-    const documentContainerUri = editorDocument.documentContainer.value;
-
-    publishingTask = await Task.ensure({
-      involves: documentContainerUri,
-      taskType: TASK_TYPE_SNIPPET_PUBLISH,
-    });
-
-    res.json({
-      data: {
-        id: publishingTask.id,
-        attributes: {
-          status: publishingTask.status,
-          type: publishingTask.type,
-        },
-      },
-    });
-
-    await publishingTask.updateStatus(JOB_STATUSES.busy);
-    const publishedVersionResults =
-      await getPublishedVersion(documentContainerUri);
-    const snippetList = await getSnippetList(snippetListUuid);
-
-    if (hasPublishedVersion(publishedVersionResults)) {
-      await updatePublishedSnippetContainer({
-        ...snippetList,
-        ...editorDocument,
-        publishedVersionResults,
-        publishingTaskUri: publishingTask.uri,
-      });
-    } else {
-      await insertPublishedSnippetContainer({
-        ...snippetList,
-        ...editorDocument,
-        publishingTaskUri: publishingTask.uri,
-      });
-    }
-
-    await publishingTask.updateStatus(JOB_STATUSES.success);
-  } catch (error) {
-    console.log(error);
-    if (publishingTask) {
-      publishingTask.updateStatus(JOB_STATUSES.failure, error.message);
-    }
-    next(error);
   }
 });
 
