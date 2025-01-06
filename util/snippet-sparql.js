@@ -3,8 +3,8 @@ import {
   sparqlEscapeString,
   sparqlEscapeUri,
   uuid,
+  update,
 } from "mu";
-import { updateSudo as update } from "@lblod/mu-auth-sudo";
 
 import { deletePublishedVersion } from "./common-sparql";
 
@@ -31,21 +31,19 @@ export const insertPublishedSnippetContainer = async ({
         PREFIX prov: <http://www.w3.org/ns/prov#>
         
         INSERT DATA {
-          GRAPH <http://mu.semte.ch/graphs/public> {
-            ${sparqlEscapeUri(publishingTaskUri)} ext:publishedVersion ${sparqlEscapeUri(publishedSnippetUri)}.
-            ${sparqlEscapeUri(snippetContainerUri)} a ext:PublishedSnippetContainer;
-              mu:uuid ${sparqlEscapeString(snippetContainerUuid)};
-              pav:hasCurrentVersion ${sparqlEscapeUri(publishedSnippetUri)};
-              pav:hasVersion ${sparqlEscapeUri(publishedSnippetUri)};
-              ext:fromSnippetList ${sparqlEscapeUri(snippetList.value)};
-              prov:derivedFrom ${sparqlEscapeUri(documentContainer.value)}.
-            ${sparqlEscapeUri(publishedSnippetUri)} a ext:PublishedSnippet;
-              mu:uuid ${sparqlEscapeString(snippetUuid)};
-              dct:title ${sparqlEscapeString(title.value)};
-              ext:editorDocumentContent ${sparqlEscapeString(content.value)};
-              pav:createdOn ${sparqlEscapeDateTime(now)};
-              prov:derivedFrom ${sparqlEscapeUri(editorDocument.value)}.
-          }
+          ${sparqlEscapeUri(publishingTaskUri)} ext:publishedVersion ${sparqlEscapeUri(publishedSnippetUri)}.
+          ${sparqlEscapeUri(snippetContainerUri)} a ext:PublishedSnippetContainer;
+            mu:uuid ${sparqlEscapeString(snippetContainerUuid)};
+            pav:hasCurrentVersion ${sparqlEscapeUri(publishedSnippetUri)};
+            pav:hasVersion ${sparqlEscapeUri(publishedSnippetUri)};
+            ext:fromSnippetList ${sparqlEscapeUri(snippetList.value)};
+            prov:derivedFrom ${sparqlEscapeUri(documentContainer.value)}.
+          ${sparqlEscapeUri(publishedSnippetUri)} a ext:PublishedSnippet;
+            mu:uuid ${sparqlEscapeString(snippetUuid)};
+            dct:title ${sparqlEscapeString(title.value)};
+            ext:editorDocumentContent ${sparqlEscapeString(content.value)};
+            pav:createdOn ${sparqlEscapeDateTime(now)};
+            prov:derivedFrom ${sparqlEscapeUri(editorDocument.value)}.
         }
       `;
 
@@ -79,21 +77,19 @@ export const updatePublishedSnippetContainer = async ({
         PREFIX prov: <http://www.w3.org/ns/prov#>
 
         INSERT DATA {
-          GRAPH <http://mu.semte.ch/graphs/public> {
-            ${sparqlEscapeUri(publishingTaskUri)} ext:publishedVersion ${sparqlEscapeUri(publishedSnippetUri)}.
+          ${sparqlEscapeUri(publishingTaskUri)} ext:publishedVersion ${sparqlEscapeUri(publishedSnippetUri)}.
 
-            ${sparqlEscapeUri(templateUri)} pav:hasCurrentVersion ${sparqlEscapeUri(publishedSnippetUri)};
-                                                      pav:hasVersion ${sparqlEscapeUri(publishedSnippetUri)};
-                                                      ext:fromSnippetList ${sparqlEscapeUri(snippetList.value)}.
+          ${sparqlEscapeUri(templateUri)} pav:hasCurrentVersion ${sparqlEscapeUri(publishedSnippetUri)};
+                                                    pav:hasVersion ${sparqlEscapeUri(publishedSnippetUri)};
+                                                    ext:fromSnippetList ${sparqlEscapeUri(snippetList.value)}.
 
-            ${sparqlEscapeUri(publishedSnippetUri)} a ext:PublishedSnippet;
-                                                    mu:uuid ${sparqlEscapeString(snippetUuid)};
-                                                    dct:title ${sparqlEscapeString(title.value)};
-                                                    ext:editorDocumentContent ${sparqlEscapeString(content.value)};
-                                                    pav:createdOn ${sparqlEscapeDateTime(now)};
-                                                    pav:previousVersion ${sparqlEscapeUri(previousVersionUri)};
-                                                    prov:derivedFrom ${sparqlEscapeUri(editorDocument.value)}.
-          }
+          ${sparqlEscapeUri(publishedSnippetUri)} a ext:PublishedSnippet;
+                                                  mu:uuid ${sparqlEscapeString(snippetUuid)};
+                                                  dct:title ${sparqlEscapeString(title.value)};
+                                                  ext:editorDocumentContent ${sparqlEscapeString(content.value)};
+                                                  pav:createdOn ${sparqlEscapeDateTime(now)};
+                                                  pav:previousVersion ${sparqlEscapeUri(previousVersionUri)};
+                                                  prov:derivedFrom ${sparqlEscapeUri(editorDocument.value)}.
         }
       `;
 
