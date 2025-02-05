@@ -51,7 +51,7 @@ export default class Template {
       INSERT DATA {
         ${sparqlEscapeUri(templateUri)} a gn:Template;
                                         a ${sparqlEscapeUri(typeUri)};
-                                        prov:derivedFrom ${sparqlEscapeUri(derivedFrom)};
+                                        prov:wasDerivedFrom ${sparqlEscapeUri(derivedFrom)};
                                         mu:uuid ${sparqlEscapeString(templateId)}.
       }
     `;
@@ -116,12 +116,12 @@ export default class Template {
         ${bindStatement}
         ?uri a gn:Template;
              mu:uuid ?id;
-             prov:derivedFrom ?derivedFrom.
+             prov:wasDerivedFrom ?derivedFrom.
         OPTIONAL {
           ?uri pav:hasCurrentVersion ?currentVersion_uri.
           ?currentVersion_uri mu:uuid ?currentVersion_id;
                               dct:title ?currentVersion_title;
-                              prov:derivedFrom ?currentVersion_derivedFrom.
+                              prov:wasDerivedFrom ?currentVersion_derivedFrom.
         }
         OPTIONAL {
           ?currentVersion_uri schema:validThrough ?currentVersion_validThrough.

@@ -68,7 +68,7 @@ export default class TemplateVersion {
           nfo:fileSize ${fileSize};
           dbpedia:extension ${sparqlEscapeString("html")};
           nfo:fileCreated ${sparqlEscapeDateTime(now)};
-          prov:derivedFrom ${sparqlEscapeUri(derivedFrom)}.
+          prov:wasDerivedFrom ${sparqlEscapeUri(derivedFrom)}.
 
         ${sparqlEscapeUri(physicalFileUri)} 
           a nfo:FileDataObject;
@@ -123,7 +123,7 @@ export default class TemplateVersion {
         ?uri a gn:TemplateVersie;
              mu:uuid ?id;
              dct:title ?title;
-             prov:derivedFrom ?derivedFrom.
+             prov:wasDerivedFrom ?derivedFrom.
         OPTIONAL {
           ?uri schema:validThrough ?validThrough.
         }
