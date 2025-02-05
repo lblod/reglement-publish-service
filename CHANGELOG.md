@@ -1,5 +1,11 @@
 # reglement-publish-service
 
+## 5.2.1
+
+### Patch Changes
+
+- [#22](https://github.com/lblod/reglement-publish-service/pull/22) [`278e0fd`](https://github.com/lblod/reglement-publish-service/commit/278e0fdc157fd8e6f5c4fc07e7c3ffb2c5b4c022) Thanks [@elpoelma](https://github.com/elpoelma)! - Fix: replace erroneous `prov:derivedFrom` predicated by `prov:wasDerivedFrom`
+
 ## 5.2.0
 
 ### Minor Changes
