@@ -47,12 +47,18 @@ export default class Template {
       PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
       PREFIX gn: <http://data.lblod.info/vocabularies/gelinktnotuleren/>
       PREFIX prov: <http://www.w3.org/ns/prov#>
+      PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 
-      INSERT DATA {
-        ${sparqlEscapeUri(templateUri)} a gn:Template;
-                                        a ${sparqlEscapeUri(typeUri)};
-                                        prov:wasDerivedFrom ${sparqlEscapeUri(derivedFrom)};
-                                        mu:uuid ${sparqlEscapeString(templateId)}.
+      INSERT {
+        ${sparqlEscapeUri(templateUri)} 
+          a gn:Template;
+          a ${sparqlEscapeUri(typeUri)};
+          prov:wasDerivedFrom ${sparqlEscapeUri(derivedFrom)};
+          ext:templateInfo ?templateInfo ;
+          mu:uuid ${sparqlEscapeString(templateId)}.
+      }
+      WHERE {
+        ${sparqlEscapeUri(derivedFrom)} ext:templateInfo ?templateInfo .
       }
     `;
     await update(createTemplateQuery);
